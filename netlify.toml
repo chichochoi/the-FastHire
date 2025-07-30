@@ -1,0 +1,10 @@
+# netlify.toml
+[build]
+  # 파이썬 함수들이 있는 폴더를 지정합니다.
+  functions = "netlify/functions"
+
+# 모든 요청을 main.py 함수로 보내는 규칙
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/main"  # 파이썬 파일 이름(확장자 제외)과 일치해야 합니다.
+  status = 200
