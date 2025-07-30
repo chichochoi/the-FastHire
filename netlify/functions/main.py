@@ -9,7 +9,13 @@ import re # re 모듈은 불필요한 태그 제거를 위해 유지합니다.
 # Together.ai API 클라이언트 초기화
 
 try:
-    client = together.Together(api_key="e5cba29e90c8626bc5fe5473fad9966c2f026ec1a0eab6a238f53c12f71a4ddd")
+    API_KEY = os.environ.get("TOGETHER_API_KEY")
+    if not API_KEY:
+        print("오류: TOGETHER_API_KEY 환경 변수가 설정되지 않았습니다.")
+        # 실제 배포 시에는 exit() 대신 적절한 오류 처리가 필요할 수 있습니다.
+
+    client = together.Together(api_key=API_KEY)
+
 except Exception as e:
     print(f"오류: Together.ai 클라이언트 초기화에 실패했습니다. API 키를 확인하세요. 에러: {e}")
     exit()
@@ -189,5 +195,17 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         outputs=output_textbox
     )
 
-if __name__ == "__main__":
-    demo.launch(share=True)
+# --- 파일의 맨 아래에 이 코드를 추가하세요 ---
+
+from fastapi import FastAPI
+from mangum import Mangum
+
+# FastAPI 인스턴스 생성
+app = FastAPI()
+
+# Gradio 인터페이스(demo)를 FastAPI 앱에 마운트합니다.
+# 이렇게 하면 FastAPI가 Gradio 앱을 '/ ' 경로에서 서비스하게 됩니다.
+app = gr.mount_gradio_app(app, demo, path="/")
+
+# Mangum을 사용해 FastAPI 앱을 Netlify 함수가 호출할 수 있는 핸들러로 변환합니다.
+handler = Mangum(app)
