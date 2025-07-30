@@ -1,0 +1,5 @@
+Flask
+serverless-wsgi
+PyPDF2
+together
+gradio
