@@ -1,5 +1,6 @@
-Flask
-serverless-wsgi
+fastapi
+uvicorn
+mangum
 PyPDF2
 together
 gradio
