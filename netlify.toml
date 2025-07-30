@@ -14,7 +14,7 @@
   # 웹사이트의 모든 경로(/*)로 들어오는 요청을
   from = "/*"
   # 'api' 라는 이름의 서버리스 함수로 전달합니다.
-  to = "/.netlify/functions/api/:splat"
+  to = "/.netlify/functions/main/:splat"
   # HTTP 상태 코드 200은 URL 변경 없이 내부적으로 처리하라는 의미입니다.
   status = 200
   force = true
