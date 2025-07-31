@@ -146,7 +146,7 @@ def generate_interview_questions(company_name, job_title, pdf_file, num_intervie
     yield output_log
     time.sleep(1)
 
-    output_log += "➡️ 2단계: 다양한 면접관과 접촉 중...\n"
+    output_log += "➡️ 2단계: 가상 면접관 생성 중...\n"
     yield output_log
 
     prompt_personas = f"""
@@ -167,7 +167,68 @@ def generate_interview_questions(company_name, job_title, pdf_file, num_intervie
     output_log += "➡️ 3단계: 최종 면접 질문 생성 중... 잠시만 기다려주세요.\n"
     yield output_log
 
-도
+    prompt_final = f"""
+    당신은 지금부터 면접 질문 생성 AI입니다. 아래 주어진 [면접 정보]를 완벽하게 숙지하고, 최고의 면접 질문을 만들어야 합니다.
+
+    [면접 정보]
+    1. 면접 상황
+    {context_info}
+
+    2. 면접관 구성
+    {interviewer_personas}
+
+    3. 지원자 정보 (자기소개서/포트폴리오 원문)
+    {resume_text}
+
+    [수행 과제]
+    위 [면접 정보]에 기반하여, 각 면접관의 역할과 스타일에 맞는 맞춤형 면접 질문을 면접관별로 {questions_per_interviewer}개씩 생성해 주세요.
+    - (지원자 정보)의 활동과 관련된 질문을 반드시 1개 이상 포함해야 합니다.
+    - 질문 뒤에는 "(의도: ...)" 형식으로 질문의 핵심 의도를 간략히 덧붙여 주세요.
+    - 최종 결과물은 면접관별로 구분하여 깔끔하게 정리된 형태로만 출력해 주세요.
+    """
+    final_questions_raw = call_llm(prompt_final)
+    if final_questions_raw.startswith("오류"):
+        yield output_log + f"❌ 3단계 실패: {final_questions_raw}"
+        return
+    
+    output_log += "✅ 3단계 완료.\n\n"
+    yield output_log
+    time.sleep(1)
+
+
+    # --- [요청사항 반영] 추가 단계: 생성된 결과 요약 ---
+    output_log += "➡️ 추가 단계: 생성된 결과 요약 중...\n"
+    yield output_log
+
+    # 요약할 원본 텍스트를 구성 (페르소나 + 질문)
+    full_content_to_summarize = f""" 
+    [면접관 페르소나]
+    {interviewer_personas}
+
+    [생성된 면접 질문]
+    {final_questions_raw}
+    """
+
+    # 요약을 위한 새로운 프롬프트
+    prompt_real_final = f"""
+    아래에 주어진 [면접관 페르소나]와 [생성된 면접 질문] 내용을 바탕으로, 면접관 페르소나' 와 '면접 질문'에 대한 핵심 부분만 선정해서 주세요.
+
+    --- 원본 내용 ---
+    {full_content_to_summarize}
+    ---
+    
+    """
+
+    summarized_result = call_llm(prompt_real_final)
+    if summarized_result.startswith("오류"):
+        # 요약에 실패하더라도 원본 결과는 보여주기 위해, 오류 메시지만 추가
+        summarized_result = "결과를 요약하는 데 실패했습니다."
+    
+    # --- 최종 결과물 구성 ---
+    final_result = f"""
+---
+
+### 🌟 면접관 프로필 + 면접 질문 + 질문 의도
 
 {summarized_result}
 """
