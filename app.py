@@ -154,8 +154,6 @@ def generate_interview_questions(company_name, job_title, pdf_file, num_intervie
     [페르소나 생성 예시]
     1. 박준형 이사 (40대 후반): 20년차 개발자 출신으로 현재 기술 총괄. 기술의 깊이와 문제 해결 과정을 집요하게 파고드는 스타일.
     2. 최유진 팀장 (30대 중반): 실무 팀의 리더. 협업 능력과 커뮤니케이션, 컬처핏을 중요하게 생각하며, 경험 기반의 질문을 주로 던짐.
-
-    'thought'는 결과에 포함하지 마세요.
     """
     interviewer_personas = call_llm(prompt_personas)
     if interviewer_personas.startswith("오류"):
@@ -186,7 +184,6 @@ def generate_interview_questions(company_name, job_title, pdf_file, num_intervie
     - (지원자 정보)의 활동과 관련된 질문을 반드시 1개 이상 포함해야 합니다.
     - 질문 뒤에는 "(의도: ...)" 형식으로 질문의 핵심 의도를 간략히 덧붙여 주세요.
     - 최종 결과물은 면접관별로 구분하여 깔끔하게 정리된 형태로만 출력해 주세요.
-    - 'thought'는 결과에 포함하지 마세요.
     """
     final_questions_raw = call_llm(prompt_final)
     if final_questions_raw.startswith("오류"):
