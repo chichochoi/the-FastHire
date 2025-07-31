@@ -236,7 +236,7 @@ with gr.Blocks(title="FastHire", theme=gr.themes.Soft(), head=ga_script_html) as
         num_interviewers = gr.Slider(label="3. 면접관 수", minimum=1, maximum=5, value=2, step=1)
         questions_per_interviewer = gr.Slider(label="4. 면접관 별 질문 개수", minimum=1, maximum=5, value=3, step=1)
     
-    pdf_file = gr.File(label="5. 자기소개서 및 포트폴리오 PDF 업로드", file_types=[".pdf"],
+    pdf_file = gr.File(label="5. 자기소개서 및 포트폴리오 PDF 업로드", file_types=[".pdf"])
     # --- [사용자 요청] 개인정보 보호 문구 추가 ---
     gr.Markdown(
         "<div style='text-align: center; color: gray; font-size: 0.8em; margin-top: 10px; margin-bottom: 10px;'>"
