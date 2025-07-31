@@ -220,7 +220,7 @@ css = """
 
 # 아이콘 파일 경로 (예: 'fav.png', 'icon.ico')
 # 다운로드한 아이콘 파일을 코드와 같은 디렉토리에 두거나 정확한 경로를 입력하세요.
-favicon_path = "logo.jpg" 
+favicon_path = "logo2.jpg" 
 
 # --- [수정] gr.Blocks에 head 파라미터 추가 ---
 with gr.Blocks(title="FastHire", theme=gr.themes.Soft(), head=ga_script_html) as demo:
