@@ -11,5 +11,5 @@
 # 이렇게 해야 https://your-site.netlify.app/ 주소로 접속했을 때 Gradio 앱이 보입니다.
 [[redirects]]
   from = "/*"
-  to = "/.netlify/functions/app"
+  to = "/.netlify/functions/main"
   status = 200
