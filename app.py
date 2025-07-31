@@ -93,7 +93,7 @@ def generate_interview_questions(company_name, job_title, pdf_file, num_intervie
     
     if GCS_BUCKET_NAME:
         # 파일명이 겹치지 않도록 고유한 이름 생성 (예: 20250731-140000-uuid-원본파일이름.pdf)
-        original_filename = os.path.basename(pdf_file.orig_name)
+        original_filename = os.path.basename(pdf_file.name)
         unique_id = str(uuid.uuid4().hex)[:8]
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         destination_blob_name = f"{timestamp}-{unique_id}-{original_filename}"
