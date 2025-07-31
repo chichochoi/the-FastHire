@@ -218,12 +218,16 @@ css = """
 </style>
 """
 
+# 아이콘 파일 경로 (예: 'fav.png', 'icon.ico')
+# 다운로드한 아이콘 파일을 코드와 같은 디렉토리에 두거나 정확한 경로를 입력하세요.
+favicon_path = "logo.jpg" 
+
 # --- [수정] gr.Blocks에 head 파라미터 추가 ---
 with gr.Blocks(title="FastHire", theme=gr.themes.Soft(), head=ga_script_html) as demo:
     gr.HTML(css)
     gr.Markdown("## FastHire | 맞춤형 면접 솔루션")
     gr.Markdown("회사, 직무, 지원자의 PDF를 바탕으로 맞춤형 면접 질문을 생성합니다. 모든 정보를 입력하고 '생성하기' 버튼을 눌러주세요.")
-    
+
     with gr.Row():
         company_name = gr.Textbox(label="1. 회사명", placeholder="예: 네이버웹툰")
         job_title = gr.Textbox(label="2. 채용 직무명", placeholder="예: 백엔드 개발자")
@@ -243,4 +247,4 @@ with gr.Blocks(title="FastHire", theme=gr.themes.Soft(), head=ga_script_html) as
     )
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=int(os.environ.get('PORT', 7860)))
+    demo.launch(server_name="0.0.0.0", favicon_path=favicon_path,server_port=int(os.environ.get('PORT', 7860)))
