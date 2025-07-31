@@ -7,3 +7,4 @@ uvicorn # 로컬 테스트 시 유용합니다.
 together
 PyPDF2
 python-dotenv # 로컬에서 .env 파일로 API 키를 관리할 때 유용합니다.
+google-cloud-storage
