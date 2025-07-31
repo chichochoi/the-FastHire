@@ -211,7 +211,7 @@ def generate_interview_questions(company_name, job_title, pdf_file, num_intervie
 
     # 요약을 위한 새로운 프롬프트
     prompt_real_final = f"""
-    아래에 주어진 [면접관 페르소나]와 [생성된 면접 질문] 내용을 바탕으로, 면접관 페르소나' 와 '면접 질문'에 대한 핵심 부분만 선정해서 주세요.
+    아래에 주어진 [면접관 페르소나]와 [생성된 면접 질문] 내용을 바탕으로, 면접관 페르소나'의 핵심 부분만 선정해서 주세요 +  '면접 질문'에 대한 핵심 부분만 선정해서 주세요.
 
     --- 원본 내용 ---
     {full_content_to_summarize}
@@ -266,14 +266,23 @@ with gr.Blocks(title="FastHire", theme=gr.themes.Soft(), head=ga_script_html) as
         num_interviewers = gr.Slider(label="3. 면접관 수", minimum=1, maximum=5, value=2, step=1)
         questions_per_interviewer = gr.Slider(label="4. 면접관 별 질문 개수", minimum=1, maximum=5, value=3, step=1)
     
-    pdf_file = gr.File(label="5. 자기소개서 및 포트폴리오 PDF 업로드", file_types=[".pdf"])
+    pdf_file = gr.File(label="5. 이력서 및 포트폴리오 PDF", file_types=[".pdf"])
     # --- [사용자 요청] 개인정보 보호 문구 추가 ---
     gr.Markdown(
         "<div style='text-align: center; color: gray; font-size: 0.8em; margin-top: 10px; margin-bottom: 10px;'>"
         "*고객의 개인정보는 서비스 제공 목적 달성 후 안전하게 삭제됩니다*"
         "</div>"
     )
-
+    gr.Markdown(
+        """
+        <div style='text-align: center; color: gray; font-size: 0.8em; margin-top: 10px; margin-bottom: 10px;'>
+            *고객의 개인정보는 서비스 제공 목적 달성 후 안전하게 삭제됩니다*
+        </div>
+        <div style='position: fixed; bottom: 10px; right: 10px; color: gray; font-size: 0.8em;'>
+            Contact us: eeooeeforbiz@gmail.com
+        </div>
+        """
+    )
     generate_button = gr.Button("면접 질문 생성하기", variant="primary")
     output_textbox = gr.Textbox(label="생성 과정 및 결과", lines=20, interactive=False, show_copy_button=True)
     
