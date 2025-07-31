@@ -1,0 +1,10 @@
+#.render.yaml
+services:
+  - type: web
+    name: fast-hire-app
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: TOGETHER_API_KEY
+        sync: false  # Render 대시보드에서 값을 설정함
