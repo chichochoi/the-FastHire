@@ -1,16 +1,15 @@
 # netlify.toml
 
 [build]
-  # Netlify가 빌드 시 실행할 명령어입니다. requirements.txt에 명시된 패키지를 설치합니다.
-  command = "pip install -r requirements.txt"
-  # 서버리스 함수가 위치한 폴더를 지정합니다.
-  functions = "netlify/functions"
+  command = "pip install -r requirements.txt" # 빌드 시 실행할 명령어
+  publish = "."                             # 배포할 정적 파일이 있는 디렉토리 (없어도 명시)
+  functions = "netlify/functions"           # 함수 코드가 위치한 디렉토리
 [build.environment]
 PYTHON_VERSION = "3.10"
 
 # 이 부분이 매우 중요합니다!
-# 사이트의 모든 경로("/")로 들어오는 요청을 app.py 함수로 전달(rewrite)합니다.
-# 이렇게 해야 https://your-site.netlify.app/ 주소로 접속했을 때 Gradio 앱이 보입니다.
+# 사이트의 모든 경로("/")로 들어오는 요청을 main.py 함수로 전달(rewrite)합니다.
+# 이렇게 해야 https://your-site.netlify.main/ 주소로 접속했을 때 Gradio 앱이 보입니다.
 [[redirects]]
   from = "/*"
   to = "/.netlify/functions/main"
