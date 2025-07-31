@@ -3,26 +3,54 @@ import PyPDF2
 import together
 import gradio as gr
 import time
+import uuid # 고유 파일명 생성을 위해 추가
+from google.cloud import storage # GCS 연동을 위해 추가
 
 # --- 사전 설정 ---
 # Render 환경 변수에서 API 키를 안전하게 불러옵니다.
-# 배포 전 Render 대시보드에서 'TOGETHER_API_KEY'를 설정해야 합니다.
 api_key = os.getenv("TOGETHER_API_KEY")
+# GCS 버킷 이름을 환경 변수에서 불러옵니다.
+GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
 
 if not api_key:
     print("오류: TOGETHER_API_KEY 환경 변수가 설정되지 않았습니다.")
-    # 로컬 테스트용으로 기존 키를 임시로 사용하거나, 프로그램을 종료할 수 있습니다.
-    # exit() 
-    # 아래 라인은 로컬 테스트를 위해 남겨둘 수 있으나, 배포 시에는 위 exit()를 활성화하는 것이 안전합니다.
-    api_key = "e5cba29e90c8626bc5fe5473fad9966c2f026ec1a0eab6a238f53c12f71a4ddd" 
+    # 로컬 테스트용
+    api_key = "e5cba29e90c8626bc5fe5473fad9966c2f026ec1a0eab6a238f53c12f71a4ddd"
+
+# GCS 클라이언트는 한번만 초기화하는 것이 효율적입니다.
+storage_client = None
+if GCS_BUCKET_NAME:
+    try:
+        storage_client = storage.Client()
+    except Exception as e:
+        print(f"경고: Google Cloud Storage 클라이언트 초기화 실패. 파일이 저장되지 않습니다. 오류: {e}")
+else:
+    print("경고: GCS_BUCKET_NAME 환경 변수가 설정되지 않았습니다. 파일이 저장되지 않습니다.")
+
 
 try:
     client = together.Together(api_key=api_key)
 except Exception as e:
-    print(f"오류: Together.ai 클라이언트 초기화에 실패했습니다. API 키를 확인하세요. 에러: {e}")
+    print(f"오류: Together.ai 클라이언트 초기화에 실패했습니다. 에러: {e}")
     exit()
 
+
 # --- 백엔드 함수 정의 ---
+
+def upload_to_gcs(bucket_name: str, source_file_path: str, destination_blob_name: str):
+    """로컬 파일을 Google Cloud Storage 버킷에 업로드합니다."""
+    if not storage_client:
+        print("GCS 클라이언트가 초기화되지 않아 업로드를 건너뜁니다.")
+        return
+
+    try:
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(destination_blob_name)
+        blob.upload_from_filename(source_file_path)
+        print(f"파일 '{source_file_path}'를(을) 버킷 '{bucket_name}'에 '{destination_blob_name}'(으)로 업로드했습니다.")
+    except Exception as e:
+        print(f"GCS 업로드 중 오류 발생: {e}")
+
 
 def extract_text_from_pdf(pdf_path: str) -> str:
     """PDF 파일에서 텍스트를 추출합니다."""
@@ -59,9 +87,21 @@ def generate_interview_questions(company_name, job_title, pdf_file, num_intervie
     if not all([company_name, job_title, pdf_file]):
         yield "회사명, 직무명, PDF 파일을 모두 입력해주세요."
         return
+        
+    # --- GCS 업로드 로직 추가 ---
+    pdf_path = pdf_file.name # Gradio가 임시 저장한 파일 경로
+    
+    if GCS_BUCKET_NAME:
+        # 파일명이 겹치지 않도록 고유한 이름 생성 (예: 20250731-140000-uuid-원본파일이름.pdf)
+        original_filename = os.path.basename(pdf_file.orig_name)
+        unique_id = str(uuid.uuid4().hex)[:8]
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        destination_blob_name = f"{timestamp}-{unique_id}-{original_filename}"
+        
+        upload_to_gcs(GCS_BUCKET_NAME, pdf_path, destination_blob_name)
+    # --- GCS 업로드 로직 끝 ---
 
     output_log = ""
-    pdf_path = pdf_file.name
     resume_text = extract_text_from_pdf(pdf_path)
     if resume_text.startswith("오류"):
         yield f"PDF 처리 실패: {resume_text}"
@@ -184,7 +224,4 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     )
 
 if __name__ == "__main__":
-    # Render 배포 환경에 맞게 서버를 실행합니다.
-    # server_name="0.0.0.0"는 모든 IP 주소에서 접속을 허용합니다.
-    # server_port는 Render가 제공하는 PORT 환경 변수를 사용하거나, 기본값(7860)을 사용합니다.
     demo.launch(server_name="0.0.0.0", server_port=int(os.environ.get('PORT', 7860)))
