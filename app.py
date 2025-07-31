@@ -99,8 +99,9 @@ def call_llm(prompt: str, model: str = "lgai/exaone-deep-32b") -> str:
         print(f"LLM API 호출 중 오류 발생: {e}")
         return f"오류: LLM API 호출에 실패했습니다. ({e})"
 
+# --- [수정된 함수] ---
 def generate_interview_questions(company_name, job_title, pdf_file, num_interviewers, questions_per_interviewer):
-    """Gradio 인터페이스로부터 입력을 받아 면접 질문을 생성하는 메인 함수"""
+    """Gradio 인터페이스로부터 입력을 받아 면접 질문을 생성하고 요약하는 메인 함수"""
 
     if not all([company_name, job_title, pdf_file]):
         yield "회사명, 직무명, PDF 파일을 모두 입력해주세요."
@@ -187,22 +188,63 @@ def generate_interview_questions(company_name, job_title, pdf_file, num_intervie
     """
     final_questions_raw = call_llm(prompt_final)
     if final_questions_raw.startswith("오류"):
-        yield output_log + f"❌ 최종 단계 실패: {final_questions_raw}"
+        yield output_log + f"❌ 3단계 실패: {final_questions_raw}"
         return
+    
+    output_log += "✅ 3단계 완료.\n\n"
+    yield output_log
+    time.sleep(1)
 
+
+    # --- [요청사항 반영] 추가 단계: 생성된 결과 요약 ---
+    output_log += "➡️ 추가 단계: 생성된 결과 요약 중...\n"
+    yield output_log
+
+    # 요약할 원본 텍스트를 구성 (페르소나 + 질문)
+    full_content_to_summarize = f""" 
+    [면접관 페르소나]
+    {interviewer_personas}
+
+    [생성된 면접 질문]
+    {final_questions_raw}
+    """
+
+    # 요약을 위한 새로운 프롬프트
+    prompt_real_final = f"""
+    아래에 주어진 [면접관 페르소나]와 [생성된 면접 질문] 내용을 바탕으로, 면접관 페르소나' 와 '면접 질문'에 대한 핵심 부분만 선정해서 주세요.
+
+    --- 원본 내용 ---
+    {full_content_to_summarize}
+    ---
+    
+    """
+
+    summarized_result = call_llm(prompt_real_final)
+    if summarized_result.startswith("오류"):
+        # 요약에 실패하더라도 원본 결과는 보여주기 위해, 오류 메시지만 추가
+        summarized_result = "결과를 요약하는 데 실패했습니다."
+    
+    # --- 최종 결과물 구성 ---
     final_result = f"""### 🧑‍💻 면접관 프로필
     
 {interviewer_personas}
 
 ---
 
-### 📝 생성된 면접 질문
+### 📝 상세 면접 질문
 
 {final_questions_raw}
+
+---
+
+### 🌟 핵심 요약
+
+{summarized_result}
 """
 
-    output_log += "\n✅ 모든 질문 생성이 완료되었습니다!\n\n---\n\n" + final_result
+    output_log += "✅ 모든 작업이 완료되었습니다!\n\n---\n\n" + final_result
     yield output_log
+
 
 # --- Gradio UI 구성 ---
 css = """
@@ -242,7 +284,7 @@ with gr.Blocks(title="FastHire", theme=gr.themes.Soft(), head=ga_script_html) as
     )
 
     generate_button = gr.Button("면접 질문 생성하기", variant="primary")
-    output_textbox = gr.Textbox(label="생성 과정 및 결과", lines=20, interactive=False)
+    output_textbox = gr.Textbox(label="생성 과정 및 결과", lines=20, interactive=False, show_copy_button=True)
     
     generate_button.click(
         fn=generate_interview_questions,
