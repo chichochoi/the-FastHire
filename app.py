@@ -46,7 +46,7 @@ ga_script_html = f"""
     <!-- Open Graph (OG) 태그 for Link Previews -->
     <meta property="og:title" content="FastHire | 맞춤형 면접 질문을 드려요">
     <meta property="og:description" content="회사, 직무, 이력서만으로 생성하는 나만의 맞춤형 면접 질문! 다양한 면접관에게 진짜 면접 질문을 받아보세요.">
-    <meta property="og:image" content="https://imgur.com/a/fcFgfaA/logo2.jpg"> 
+    <meta property="og:image" content="https://i.imgur.com/hpUa5yb.jpeg"> 
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="FastHire">
 """
