@@ -143,7 +143,8 @@ def generate_interview_questions(company_name, job_title, pdf_file, num_intervie
     - 채용 직무: {job_title}
     - 핵심 요구 역량: (해당 직무에 필요한 기술 스택, 소프트 스킬 등을 3-4가지 서술)
     """
-    context_info = call_llm(prompt_context)
+    chat_history = []
+    context_info = call_llm(prompt_context, chat_history)
     if context_info.startswith("오류"):
         yield output_log + f"❌ 1단계 실패: {context_info}"
         return
@@ -161,7 +162,7 @@ def generate_interview_questions(company_name, job_title, pdf_file, num_intervie
     1. 박준형 이사 (40대 후반): 20년차 개발자 출신으로 현재 기술 총괄. 기술의 깊이와 문제 해결 과정을 집요하게 파고드는 스타일.
     2. 최유진 팀장 (30대 중반): 실무 팀의 리더. 협업 능력과 커뮤니케이션, 컬처핏을 중요하게 생각하며, 경험 기반의 질문을 주로 던짐.
     """
-    interviewer_personas = call_llm(prompt_personas)
+    interviewer_personas = call_llm(prompt_personas, chat_history)
     if interviewer_personas.startswith("오류"):
         yield output_log + f"❌ 2단계 실패: {interviewer_personas}"
         return
@@ -191,7 +192,7 @@ def generate_interview_questions(company_name, job_title, pdf_file, num_intervie
     - 질문 뒤에는 "(의도: ...)" 형식으로 질문의 핵심 의도를 간략히 덧붙여 주세요.
     - 최종 결과물은 면접관별로 구분하여 깔끔하게 정리된 형태로만 출력해 주세요.
     """
-    final_questions_raw = call_llm(prompt_final)
+    final_questions_raw = call_llm(prompt_final, chat_history)
     if final_questions_raw.startswith("오류"):
         yield output_log + f"❌ 3단계 실패: {final_questions_raw}"
         return
@@ -225,7 +226,7 @@ def generate_interview_questions(company_name, job_title, pdf_file, num_intervie
     
     """
 
-    summarized_result = call_llm(prompt_real_final)
+    summarized_result = call_llm(prompt_real_final, chat_history)
     if summarized_result.startswith("오류"):
         # 요약에 실패하더라도 원본 결과는 보여주기 위해, 오류 메시지만 추가
         summarized_result = "결과를 요약하는 데 실패했습니다."
