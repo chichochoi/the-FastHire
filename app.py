@@ -271,11 +271,8 @@ css = """
 </style>
 """
 
-# 아이콘 파일 경로 (예: 'fav.png', 'icon.ico')
-# 다운로드한 아이콘 파일을 코드와 같은 디렉토리에 두거나 정확한 경로를 입력하세요.
 favicon_path = "logo2.jpg" 
 
-# --- [수정] gr.Blocks에 head 파라미터 추가 ---
 with gr.Blocks(title="1분만에 다양한 면접관의 실제 면접 질문 받기", theme=gr.themes.Soft(), head=ga_script_html) as demo:
     gr.HTML(css)
     gr.Markdown("## FastHire | 맞춤형 면접 솔루션")
@@ -288,36 +285,43 @@ with gr.Blocks(title="1분만에 다양한 면접관의 실제 면접 질문 받
     with gr.Row():
         num_interviewers = gr.Slider(label="3. 면접관 수", minimum=1, maximum=5, value=2, step=1)
         questions_per_interviewer = gr.Slider(label="4. 면접관 별 질문 개수", minimum=1, maximum=5, value=3, step=1)
-    
-    # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 부분이 수정되었습니다 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-    
-    # 1. 기존 업로드 버튼은 그대로 둡니다.
+
     pdf_file = gr.UploadButton("5. 이력서 및 포트폴리오 PDF 업로드", file_types=[".pdf"])
-    
-    # 2. 업로드 상태를 표시할 텍스트 박스를 추가합니다.
     upload_feedback_box = gr.Textbox(label="업로드 상태", interactive=False)
-    
-    # 3. upload 이벤트가 발생하면 show_upload_feedback 함수를 호출하여 텍스트 박스를 업데이트합니다.
+
     pdf_file.upload(
         fn=show_upload_feedback,
         inputs=[pdf_file],
         outputs=[upload_feedback_box]
     )
-    
-    # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-    
 
+    # ✅ 개인정보 문구는 생성 버튼 위에 위치 (기존처럼 유지)
     gr.Markdown(
         """
-        <div style='text-align: center; color: gray; font-size: 0.8em; margin-top: 10px; margin-bottom: 10px;'>
+        <div style='text-align: center; color: gray; font-size: 0.8em; margin-top: 20px; margin-bottom: 10px;'>
             *고객의 개인정보는 서비스 제공 목적 달성 후 안전하게 삭제됩니다*
         </div>
-        <div style='text-align: right; color: gray; font-size: 1.2em; margin-bottom: 20px;'>
+        """
+    )
+
+    generate_button = gr.Button("면접 질문 생성하기", variant="primary")
+    output_textbox = gr.Textbox(label="생성 과정 및 결과", lines=20, interactive=False, show_copy_button=True)
+
+    generate_button.click(
+        fn=generate_interview_questions,
+        inputs=[company_name, job_title, pdf_file, num_interviewers, questions_per_interviewer],
+        outputs=output_textbox
+    )
+
+    # ✅ Contact us 및 안내 문구는 맨 아래로 이동
+    gr.Markdown(
+        """
+        <div style='text-align: right; color: gray; font-size: 1.2em; margin-top: 40px; margin-bottom: 10px;'>
             Contact us: eeooeeforbiz@gmail.com
         </div>
         """
     )
-    
+
     gr.HTML(
         """
         <div style='text-align: left; color: gray; font-size: 0.8em; margin-bottom: 30px;'>
@@ -327,15 +331,5 @@ with gr.Blocks(title="1분만에 다양한 면접관의 실제 면접 질문 받
         """
     )
 
-
-    generate_button = gr.Button("면접 질문 생성하기", variant="primary")
-    output_textbox = gr.Textbox(label="생성 과정 및 결과", lines=20, interactive=False, show_copy_button=True)
-    
-    generate_button.click(
-        fn=generate_interview_questions,
-        inputs=[company_name, job_title, pdf_file, num_interviewers, questions_per_interviewer],
-        outputs=output_textbox
-    )
-
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", favicon_path=favicon_path,server_port=int(os.environ.get('PORT', 7860)))
+    demo.launch(server_name="0.0.0.0", favicon_path=favicon_path, server_port=int(os.environ.get('PORT', 7860)))
