@@ -269,7 +269,7 @@ css = """
 favicon_path = "logo2.jpg" 
 
 # --- [수정] gr.Blocks에 head 파라미터 추가 ---
-with gr.Blocks(title="FastHire | 면접 질문 | 면접 준", theme=gr.themes.Soft(), head=ga_script_html) as demo:
+with gr.Blocks(title="FastHire | 면접 질문 | 면접 준비", theme=gr.themes.Soft(), head=ga_script_html) as demo:
     gr.HTML(css)
     gr.Markdown("## FastHire | 맞춤형 면접 솔루션")
     gr.Markdown("회사, 직무, 지원자의 PDF를 바탕으로 맞춤형 면접 질문을 생성합니다. 모든 정보를 입력하고 '생성하기' 버튼을 눌러주세요.")
