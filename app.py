@@ -37,14 +37,22 @@ except Exception as e:
     exit()
 
 # --- [수정] Google Analytics 스크립트 생성 ---
-ga_script_html = ""
-if GA_MEASUREMENT_ID:
-    ga_script_html = f"""
+ga_script_html = f"""
     <!-- SEO 메타 태그 -->
-    <meta name="description" content="PDF 기반 맞춤형 면접 질문 생성 플랫폼. 회사와 직무를 입력하면 AI가 질문을 자동 생성합니다. 다양한 면접관한테 예시 질문을 받을 수 있습니다.">
-    <meta name="keywords" content="면접 질문 예시, AI 면접 질문, 면접 준비, 취준, 취직">
+    <meta name="description" content="FastHire | PDF 기반 맞춤형 면접 질문 생성 플랫폼. 회사와 직무를 입력하면 AI가 질문을 자동 생성합니다. 다양한 면접관한테 예시 질문을 받을 수 있습니다.">
+    <meta name="keywords" content="면접 질문 예시, AI 면접 질문, 면접 준비, 취준, 취직, FastHire">
     <meta name="author" content="FastHire">
 
+    <!-- Open Graph (OG) 태그 for Link Previews -->
+    <meta property="og:title" content="FastHire | 맞춤형 면접 질문을 드려요">
+    <meta property="og:description" content="회사, 직무, 이력서만으로 생성하는 나만의 맞춤형 면접 질문! 다양한 면접관에게 진짜 면접 질문을 받아보세요.">
+    <meta property="og:image" content="https://imgur.com/a/fcFgfaA/logo2.jpg"> 
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="FastHire">
+"""
+
+if GA_MEASUREMENT_ID:
+    ga_script_html += f"""
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id={GA_MEASUREMENT_ID}"></script>
     <script>
@@ -273,7 +281,7 @@ css = """
 
 favicon_path = "logo2.jpg" 
 
-with gr.Blocks(title="1분만에 다양한 면접관의 실제 면접 질문 받기", theme=gr.themes.Soft(), head=ga_script_html) as demo:
+with gr.Blocks(title="수많은 면접관들의 진짜 면접 질문 받기", theme=gr.themes.Soft(), head=ga_script_html) as demo:
     gr.HTML(css)
     gr.Markdown("## FastHire | 맞춤형 면접 솔루션")
     gr.Markdown("회사, 직무, 지원자의 PDF를 바탕으로 맞춤형 면접 질문을 생성합니다. 모든 정보를 입력하고 '생성하기' 버튼을 눌러주세요.")
