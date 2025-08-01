@@ -41,7 +41,7 @@ ga_script_html = ""
 if GA_MEASUREMENT_ID:
     ga_script_html = f"""
     <!-- SEO 메타 태그 -->
-    <meta name="description" content="PDF 기반 맞춤형 면접 질문 생성 플랫폼. 회사와 직무를 입력하면 AI가 질문을 자동 생성합니다.">
+    <meta name="description" content="PDF 기반 맞춤형 면접 질문 생성 플랫폼. 회사와 직무를 입력하면 AI가 질문을 자동 생성합니다. 다양한 면접관한테 예시 질문을 받을 수 있습니다.">
     <meta name="keywords" content="면접 질문 예시, AI 면접 질문, 면접 준비, 취준, 취직">
     <meta name="author" content="FastHire">
 
@@ -292,8 +292,8 @@ with gr.Blocks(title="FastHire | 면접 질문 | 면접 준", theme=gr.themes.So
     gr.HTML(
     """
     <div style='position: fixed; bottom: 10px; left: 15px; color: gray; font-size: 0.8em;'>
-        회사명, 직무명, PDF 이력서를 기반으로 <strong>AI가 면접 질문을 자동 생성</strong>합니다.<br>
-        맞춤형 <strong>면접 준비</strong>, <strong>자기소개서 기반 질문</strong>, <strong>PDF 분석</strong>, <strong>취업 대비</strong>까지 완벽하게 지원합니다.
+        회사명, 직무명, PDF 이력서를 기반으로 <strong>다양한 면접관한테 면접 질문을</strong> 받을 수 있습니다.<br>
+        맞춤형 <strong>면접 준비</strong>, <strong>자기소개서 기반 질문</strong>, <strong>다양한 형태의 질문 대비</strong>, <strong>취업 대비</strong>까지 완벽하게 지원합니다.
     </div>
     """
     )
