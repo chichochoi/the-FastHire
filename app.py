@@ -40,6 +40,11 @@ except Exception as e:
 ga_script_html = ""
 if GA_MEASUREMENT_ID:
     ga_script_html = f"""
+    <!-- SEO 메타 태그 -->
+    <meta name="description" content="PDF 기반 맞춤형 면접 질문 생성 플랫폼. 회사와 직무를 입력하면 AI가 질문을 자동 생성합니다.">
+    <meta name="keywords" content="면접 질문 예시, AI 면접 질문, 면접 준비, 취준, 취직">
+    <meta name="author" content="FastHire">
+
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id={GA_MEASUREMENT_ID}"></script>
     <script>
@@ -258,7 +263,7 @@ css = """
 favicon_path = "logo2.jpg" 
 
 # --- [수정] gr.Blocks에 head 파라미터 추가 ---
-with gr.Blocks(title="FastHire", theme=gr.themes.Soft(), head=ga_script_html) as demo:
+with gr.Blocks(title="FastHire | 면접 질문 | 면접 준", theme=gr.themes.Soft(), head=ga_script_html) as demo:
     gr.HTML(css)
     gr.Markdown("## FastHire | 맞춤형 면접 솔루션")
     gr.Markdown("회사, 직무, 지원자의 PDF를 바탕으로 맞춤형 면접 질문을 생성합니다. 모든 정보를 입력하고 '생성하기' 버튼을 눌러주세요.")
@@ -284,6 +289,15 @@ with gr.Blocks(title="FastHire", theme=gr.themes.Soft(), head=ga_script_html) as
         </div>
         """
     )
+    gr.HTML(
+    """
+    <div style='position: fixed; bottom: 10px; left: 15px; color: gray; font-size: 0.8em;'>
+        회사명, 직무명, PDF 이력서를 기반으로 <strong>AI가 면접 질문을 자동 생성</strong>합니다.<br>
+        맞춤형 <strong>면접 준비</strong>, <strong>자기소개서 기반 질문</strong>, <strong>PDF 분석</strong>, <strong>취업 대비</strong>까지 완벽하게 지원합니다.
+    </div>
+    """
+    )
+
     generate_button = gr.Button("면접 질문 생성하기", variant="primary")
     output_textbox = gr.Textbox(label="생성 과정 및 결과", lines=20, interactive=False, show_copy_button=True)
     
