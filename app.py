@@ -59,6 +59,12 @@ else:
     print("경고: GA_MEASUREMENT_ID 환경 변수가 설정되지 않아 Google Analytics가 비활성화되었습니다.")
 
 # --- 백엔드 함수 정의 ---
+def show_upload_feedback(file_obj):
+    """파일이 업로드되면 확인 메시지를 반환하는 함수"""
+    if file_obj is not None:
+        # 파일 객체가 존재하면 (업로드 성공 시) 메시지 반환
+        return "✅ 파일 업로드 완료!"
+    return "" # 파일이 없을 경우 빈 문자열 반환
 
 def upload_to_gcs(bucket_name: str, source_file_path: str, destination_blob_name: str):
     """로컬 파일을 Google Cloud Storage 버킷에 업로드합니다."""
@@ -282,9 +288,22 @@ with gr.Blocks(title="1분만에 다양한 면접관의 실제 면접 질문 받
         num_interviewers = gr.Slider(label="3. 면접관 수", minimum=1, maximum=5, value=2, step=1)
         questions_per_interviewer = gr.Slider(label="4. 면접관 별 질문 개수", minimum=1, maximum=5, value=3, step=1)
     
+    # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 부분이 수정되었습니다 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+    
+    # 1. 기존 업로드 버튼은 그대로 둡니다.
     pdf_file = gr.UploadButton("5. 이력서 및 포트폴리오 PDF 업로드", file_types=[".pdf"])
-    # --- [사용자 요청] 개인정보 보호 문구 추가 ---
-    # 업로드 파일 경로
+    
+    # 2. 업로드 상태를 표시할 텍스트 박스를 추가합니다.
+    upload_feedback_box = gr.Textbox(label="업로드 상태", interactive=False)
+    
+    # 3. upload 이벤트가 발생하면 show_upload_feedback 함수를 호출하여 텍스트 박스를 업데이트합니다.
+    pdf_file.upload(
+        fn=show_upload_feedback,
+        inputs=[pdf_file],
+        outputs=[upload_feedback_box]
+    )
+    
+    # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
     
 
     gr.Markdown(
