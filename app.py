@@ -314,22 +314,20 @@ with gr.Blocks(title="1분만에 다양한 면접관의 실제 면접 질문 받
     )
 
     # ✅ Contact us 및 안내 문구는 맨 아래로 이동
-    gr.Markdown(
+    gr.HTML(
         """
-        <div style='text-align: right; color: gray; font-size: 1.2em; margin-top: 40px; margin-bottom: 10px;'>
-            Contact us: eeooeeforbiz@gmail.com
+        <div style='display: flex; justify-content: space-between; align-items: flex-start; color: gray; font-size: 0.9em; margin-top: 40px; margin-bottom: 30px;'>
+            <div style='text-align: left; max-width: 70%;'>
+                회사명, 직무명, PDF 이력서를 기반으로 <strong>다양한 면접관한테 면접 질문을</strong> 받을 수 있습니다.<br>
+                맞춤형 <strong>면접 준비</strong>, <strong>자기소개서 기반 질문</strong>, <strong>다양한 형태의 질문 대비</strong>, <strong>취업 대비</strong>까지 완벽하게 지원합니다.
+            </div>
+            <div style='text-align: right; white-space: nowrap;'>
+                Contact us: eeooeeforbiz@gmail.com
+            </div>
         </div>
         """
     )
 
-    gr.HTML(
-        """
-        <div style='text-align: left; color: gray; font-size: 0.8em; margin-bottom: 30px;'>
-            회사명, 직무명, PDF 이력서를 기반으로 <strong>다양한 면접관한테 면접 질문을</strong> 받을 수 있습니다.<br>
-            맞춤형 <strong>면접 준비</strong>, <strong>자기소개서 기반 질문</strong>, <strong>다양한 형태의 질문 대비</strong>, <strong>취업 대비</strong>까지 완벽하게 지원합니다.
-        </div>
-        """
-    )
 
 if __name__ == "__main__":
     demo.launch(server_name="0.0.0.0", favicon_path=favicon_path, server_port=int(os.environ.get('PORT', 7860)))
