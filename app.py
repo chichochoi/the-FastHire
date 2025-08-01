@@ -223,6 +223,7 @@ def generate_interview_questions(company_name, job_title, pdf_file, num_intervie
     # 요약을 위한 새로운 프롬프트
     prompt_real_final = f"""
     아래에서 중복되는 내용을 지우고 한국어 위주의 답변만 남겨주세요
+    </thought>가 포함된 문단은 아예 지워주세요.
     ---
     {full_content_to_summarize}
     ---
@@ -276,7 +277,7 @@ with gr.Blocks(title="FastHire | 면접 질문 | 면접 준", theme=gr.themes.So
         num_interviewers = gr.Slider(label="3. 면접관 수", minimum=1, maximum=5, value=2, step=1)
         questions_per_interviewer = gr.Slider(label="4. 면접관 별 질문 개수", minimum=1, maximum=5, value=3, step=1)
     
-    pdf_file = gr.File(label="5. 이력서 및 포트폴리오 PDF", file_types=[".pdf"])
+    pdf_file = gr.File(label="5. 이력서 및 포트폴리오 PDF", file_types=None)
     # --- [사용자 요청] 개인정보 보호 문구 추가 ---
 
     gr.Markdown(
