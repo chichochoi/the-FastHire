@@ -217,9 +217,7 @@ def generate_interview_questions(company_name, job_title, pdf_file, num_intervie
 
     # 요약을 위한 새로운 프롬프트
     prompt_real_final = f"""
-    1. 아래에 주어진 [면접관 페르소나] 에서 한국어 위주로 된 면접관 페르소나만 선정해서 주세요
-    2. 아래에 주어진 [생성된 면접 질문] 에서 한국어 위주로 된 면접 질문만 선정해서 주세요
-
+    아래에서 중복되는 내용을 지우고 한국어 위주의 답변만 남겨주세요
     ---
     {full_content_to_summarize}
     ---
