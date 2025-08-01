@@ -234,7 +234,8 @@ def generate_interview_questions(company_name, job_title, pdf_file, num_intervie
 
     # 요약을 위한 새로운 프롬프트
     prompt_real_final = f"""
-    아래에서 중복되는 내용을 지우고 한국어 위주의 '면접관 페르소나'와 '면접질문'들만 남기세요.
+    아래에서 영어를 모두 한국어로 번역해주세요.
+    아래에서 중복되는 내용을 지우고 '면접관 페르소나'와 '면접질문'들만 남기세요.
     ---
     {full_content_to_summarize}
     ---
@@ -311,19 +312,21 @@ with gr.Blocks(title="1분만에 다양한 면접관의 실제 면접 질문 받
         <div style='text-align: center; color: gray; font-size: 0.8em; margin-top: 10px; margin-bottom: 10px;'>
             *고객의 개인정보는 서비스 제공 목적 달성 후 안전하게 삭제됩니다*
         </div>
-        <div style='position: fixed; bottom: 10px; right: 15px; color: gray; font-size: 1.2em;'>
+        <div style='text-align: right; color: gray; font-size: 1.2em; margin-bottom: 20px;'>
             Contact us: eeooeeforbiz@gmail.com
         </div>
         """
     )
+    
     gr.HTML(
-    """
-    <div style='position: fixed; bottom: 10px; left: 15px; color: gray; font-size: 0.8em;'>
-        회사명, 직무명, PDF 이력서를 기반으로 <strong>다양한 면접관한테 면접 질문을</strong> 받을 수 있습니다.<br>
-        맞춤형 <strong>면접 준비</strong>, <strong>자기소개서 기반 질문</strong>, <strong>다양한 형태의 질문 대비</strong>, <strong>취업 대비</strong>까지 완벽하게 지원합니다.
-    </div>
-    """
+        """
+        <div style='text-align: left; color: gray; font-size: 0.8em; margin-bottom: 30px;'>
+            회사명, 직무명, PDF 이력서를 기반으로 <strong>다양한 면접관한테 면접 질문을</strong> 받을 수 있습니다.<br>
+            맞춤형 <strong>면접 준비</strong>, <strong>자기소개서 기반 질문</strong>, <strong>다양한 형태의 질문 대비</strong>, <strong>취업 대비</strong>까지 완벽하게 지원합니다.
+        </div>
+        """
     )
+
 
     generate_button = gr.Button("면접 질문 생성하기", variant="primary")
     output_textbox = gr.Textbox(label="생성 과정 및 결과", lines=20, interactive=False, show_copy_button=True)
