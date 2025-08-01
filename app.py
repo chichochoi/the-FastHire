@@ -82,15 +82,20 @@ def extract_text_from_pdf(pdf_path: str) -> str:
     except Exception as e:
         return f"PDF 처리 중 오류 발생: {e}"
 
-def call_llm(prompt: str, model: str = "lgai/exaone-deep-32b") -> str:
-    """Together.ai API를 호출하고, 실패 시 빈 문자열 대신 오류 메시지를 반환합니다."""
+def call_llm(prompt: str, chat_history: list, model: str = "lgai/exaone-deep-32b") -> str:
+    """Together.ai API를 호출하고, 실패 시 오류 메시지를 반환하며 대화 히스토리를 유지합니다."""
+    # 새로운 사용자 메시지를 기록
+    chat_history.append({"role": "user", "content": prompt})
+
     try:
         response = client.chat.completions.create(
             model=model,
-            messages=[{"role": "user", "content": prompt}],
+            messages=chat_history,
         )
         if response.choices and response.choices[0].message.content:
-            return response.choices[0].message.content.strip()
+            reply = response.choices[0].message.content.strip()
+            chat_history.append({"role": "assistant", "content": reply})
+            return reply
         else:
             print("Warning: LLM returned an empty response.")
             return "오류: LLM으로부터 비어 있는 응답을 받았습니다."
