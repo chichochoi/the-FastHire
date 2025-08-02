@@ -45,7 +45,7 @@ MODELS = {
 # --- [신규] 다국어 지원을 위한 텍스트 관리 ---
 LANG_STRINGS = {
     'ko': {
-        "title": "FastHire | 맞춤형 면접 솔루션",
+        "title": "# **FastHire | 맞춤형 면접 솔루션**",
         "subtitle": "회사, 직무, 지원자의 PDF를 바탕으로 맞춤형 면접 질문을 생성합니다.<br>면접관 수에 따라 여러 종류의 면접관이 여러분에게 질문합니다.",
         "company_label": "1. 회사명",
         "company_placeholder": "예: 네이버웹툰",
@@ -111,7 +111,7 @@ LANG_STRINGS = {
 ---""",
     },
     'en': {
-        "title": "FastHire | Custom Interview Solution",
+        "title": "# **FastHire | Custom Interview Solution**",
         "subtitle": "Generates tailored interview questions based on the company, job title, and applicant's PDF.<br>Different types of interviewers will ask you questions depending on the number selected.",
         "company_label": "1. Company Name",
         "company_placeholder": "e.g., Google",
@@ -379,10 +379,18 @@ css = """
 body, * {
     font-family: 'Nanum Gothic', 'Arial', sans-serif !important;
 }
+#header_row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+#language_selector {
+    margin-left: auto;
+}
 </style>
 """
 
-with gr.Blocks(title="## FastHire | 맞춤형 면접 질문 받기", theme=gr.themes.Soft(), head=ga_script_html) as demo:
+with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.themes.Soft(), head=ga_script_html) as demo:
     # 언어 상태를 저장할 보이지 않는 컴포넌트
     lang_state = gr.State("ko")
     
@@ -390,7 +398,7 @@ with gr.Blocks(title="## FastHire | 맞춤형 면접 질문 받기", theme=gr.th
     
     with gr.Row(elem_id="header_row"):
         # 제목과 언어 선택기를 한 줄에 배치
-        title_md = gr.Markdown("## " + LANG_STRINGS['ko']['title'])
+        title_md = gr.Markdown(LANG_STRINGS['ko']['title'])
         lang_selector = gr.Radio(
             ["한국어", "English"], 
             value="한국어", 
