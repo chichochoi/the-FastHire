@@ -355,7 +355,6 @@ def update_ui_language(lang_choice):
     T = LANG_STRINGS[lang_key]
     
     # 모든 UI 컴포넌트의 속성을 한 번에 업데이트하여 반환
-    # [수정] pdf_file에 대한 gr.update(value=...)를 반환 튜플에서 제거했습니다.
     return (
         lang_key, # lang_state 업데이트
         gr.update(value=T['title']),
@@ -364,7 +363,7 @@ def update_ui_language(lang_choice):
         gr.update(label=T['job_label'], placeholder=T['job_placeholder']),
         gr.update(label=T['interviewer_count_label']),
         gr.update(label=T['question_count_label']),
-        # gr.update(value=T['upload_button_text']) <- 이 줄이 제거되었습니다.
+        gr.update(value=T['upload_button_text']),  # <-- 수정된 부분
         gr.update(label=T['upload_status_label']),
         gr.update(value=T['privacy_notice']),
         gr.update(value=T['generate_button_text']),
@@ -441,9 +440,9 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
         fn=update_ui_language,
         inputs=[lang_selector],
         outputs=[
-            lang_state, title_md, subtitle_md,
+            lang_key, title_md, subtitle_md,
             company_name, job_title, num_interviewers, questions_per_interviewer,
-            # pdf_file, <- 이 컴포넌트가 outputs 리스트에서 제거되었습니다.
+            pdf_file,  # <-- 수정된 부분
             upload_feedback_box, privacy_notice_html, generate_button,
             output_textbox, contact_html
         ]
