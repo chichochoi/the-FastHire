@@ -382,7 +382,7 @@ body, * {
 </style>
 """
 
-with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.themes.Soft(), head=ga_script_html) as demo:
+with gr.Blocks(title="## FastHire | 맞춤형 면접 질문 받기", theme=gr.themes.Soft(), head=ga_script_html) as demo:
     # 언어 상태를 저장할 보이지 않는 컴포넌트
     lang_state = gr.State("ko")
     
