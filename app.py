@@ -354,16 +354,15 @@ def update_ui_language(lang_choice):
     lang_key = 'en' if lang_choice == 'English' else 'ko'
     T = LANG_STRINGS[lang_key]
     
-    # 모든 UI 컴포넌트의 속성을 한 번에 업데이트하여 반환
     return (
-        lang_key, # lang_state 업데이트
+        lang_state, # lang_state 업데이트
         gr.update(value=T['title']),
         gr.update(value=T['subtitle']),
         gr.update(label=T['company_label'], placeholder=T['company_placeholder']),
         gr.update(label=T['job_label'], placeholder=T['job_placeholder']),
         gr.update(label=T['interviewer_count_label']),
         gr.update(label=T['question_count_label']),
-        gr.update(value=T['upload_button_text']),  # <-- 수정된 부분
+        gr.update(label=T['upload_button_text']), # <--- 이 부분을 label 업데이트로 수정
         gr.update(label=T['upload_status_label']),
         gr.update(value=T['privacy_notice']),
         gr.update(value=T['generate_button_text']),
@@ -418,8 +417,14 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
         num_interviewers = gr.Slider(label=LANG_STRINGS['ko']['interviewer_count_label'], minimum=1, maximum=5, value=2, step=1)
         questions_per_interviewer = gr.Slider(label=LANG_STRINGS['ko']['question_count_label'], minimum=1, maximum=5, value=3, step=1)
 
-    pdf_file = gr.UploadButton(LANG_STRINGS['ko']['upload_button_text'], file_types=[".pdf"])
+# ...
+    pdf_file = gr.UploadButton(
+        "이력서 및 포트폴리오 pdf",  # 버튼 자체에 표시될 고정 텍스트
+        label=LANG_STRINGS['ko']['upload_button_text'], # 버튼 위에 표시될 동적 텍스트
+        file_types=[".pdf"]
+    )
     upload_feedback_box = gr.Textbox(label=LANG_STRINGS['ko']['upload_status_label'], interactive=False)
+# ...
 
     pdf_file.upload(
         fn=show_upload_feedback,
@@ -441,9 +446,9 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
         fn=update_ui_language,
         inputs=[lang_selector],
         outputs=[
-            lang_state, title_md, subtitle_md, # <--- 여기를 수정
+            lang_state, title_md, subtitle_md,
             company_name, job_title, num_interviewers, questions_per_interviewer,
-            pdf_file,
+            pdf_file,  # <--- pdf_file을 다시 추가
             upload_feedback_box, privacy_notice_html, generate_button,
             output_textbox, contact_html
         ]
