@@ -435,18 +435,20 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
 
     # --- 이벤트 리스너 연결 ---
 
+# ...
     # 언어 선택기 변경 이벤트
     lang_selector.select(
         fn=update_ui_language,
         inputs=[lang_selector],
         outputs=[
-            lang_key, title_md, subtitle_md,
+            lang_state, title_md, subtitle_md, # <--- 여기를 수정
             company_name, job_title, num_interviewers, questions_per_interviewer,
-            pdf_file,  # <-- 수정된 부분
+            pdf_file,
             upload_feedback_box, privacy_notice_html, generate_button,
             output_textbox, contact_html
         ]
     )
+# ...
     
     # 질문 생성 버튼 클릭 이벤트
     generate_button.click(
