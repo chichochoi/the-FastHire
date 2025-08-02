@@ -3,15 +3,15 @@ import PyPDF2
 import together
 import gradio as gr
 import time
-import uuid # 고유 파일명 생성을 위해 추가
-from google.cloud import storage # GCS 연동을 위해 추가
+import uuid  # 고유 파일명 생성을 위해 추가
+from google.cloud import storage  # GCS 연동을 위해 추가
 
 # --- 사전 설정 ---
 # Render 환경 변수에서 API 키를 안전하게 불러옵니다.
 api_key = os.getenv("TOGETHER_API_KEY")
 # GCS 버킷 이름을 환경 변수에서 불러옵니다.
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
-# --- [수정] Google Analytics 연동을 위한 설정 ---
+# Google Analytics 연동을 위한 설정
 GA_MEASUREMENT_ID = os.getenv("GA_MEASUREMENT_ID")
 
 if not api_key:
@@ -36,21 +36,168 @@ except Exception as e:
     print(f"오류: Together.ai 클라이언트 초기화에 실패했습니다. 에러: {e}")
     exit()
 
-# --- [수정] Google Analytics 스크립트 생성 ---
+# --- [신규] LLM 모델 정의 ---
+MODELS = {
+    'ko': 'lgai/exaone-deep-32b',
+    'en': 'meta-llama/Llama-3-70b-chat-hf' # 영어권에서 성능이 좋은 Llama 모델
+}
+
+# --- [신규] 다국어 지원을 위한 텍스트 관리 ---
+LANG_STRINGS = {
+    'ko': {
+        "title": "FastHire | 맞춤형 면접 솔루션",
+        "subtitle": "회사, 직무, 지원자의 PDF를 바탕으로 맞춤형 면접 질문을 생성합니다.<br>면접관 수에 따라 여러 종류의 면접관이 여러분에게 질문합니다.",
+        "company_label": "1. 회사명",
+        "company_placeholder": "예: 네이버웹툰",
+        "job_label": "2. 채용 직무명",
+        "job_placeholder": "예: 백엔드 개발자",
+        "interviewer_count_label": "3. 면접관 수",
+        "question_count_label": "4. 면접관 별 질문 개수",
+        "upload_button_text": "5. 이력서 및 포트폴리오 PDF 업로드",
+        "upload_status_label": "업로드 상태",
+        "upload_success": "✅ 파일 업로드 완료!",
+        "privacy_notice": "<div style='text-align: center; color: gray; font-size: 0.8em; margin-top: 20px; margin-bottom: 10px;'>*고객의 개인정보는 서비스 제공 목적 달성 후 안전하게 삭제됩니다*</div>",
+        "generate_button_text": "면접 질문 생성하기",
+        "output_label": "생성 과정 및 결과",
+        "contact_html": """<div style='display: flex; justify-content: space-between; align-items: flex-start; color: gray; font-size: 0.9em; margin-top: 40px; margin-bottom: 30px;'><div style='text-align: left; max-width: 70%;'>회사명, 직무명, PDF 이력서를 기반으로 <strong>다양한 면접관한테 면접 질문을</strong> 받을 수 있습니다.<br>맞춤형 <strong>면접 준비</strong>, <strong>자기소개서 기반 질문</strong>, <strong>다양한 형태의 질문 대비</strong>, <strong>취업 대비</strong>까지 완벽하게 지원합니다.</div><div style='text-align: right; white-space: nowrap;'>Contact us: eeooeeforbiz@gmail.com</div></div>""",
+        "error_all_fields": "회사명, 직무명, PDF 파일을 모두 입력해주세요.",
+        "error_not_pdf": "❌ 오류: PDF 파일만 업로드할 수 있습니다.",
+        "log_step1_start": "➡️ 1단계: 회사 및 직무 정보 분석 중...",
+        "log_step1_fail": "❌ 1단계 실패: ",
+        "log_step1_done": "✅ 1단계 완료.\n\n",
+        "log_step2_start": "➡️ 2단계: 가상 면접관 생성 중...",
+        "log_step2_fail": "❌ 2단계 실패: ",
+        "log_step2_done": "✅ 2단계 완료.\n\n",
+        "log_step3_start": "➡️ 3단계: 최종 면접 질문 생성 중... 잠시만 기다려주세요.",
+        "log_step3_fail": "❌ 3단계 실패: ",
+        "log_step3_done": "✅ 3단계 완료.\n\n",
+        "log_summary_start": "➡️ 추가 단계: 생성된 결과 요약 중...",
+        "log_summary_fail": "결과를 요약하는 데 실패했습니다.",
+        "log_all_done": "✅ 모든 작업이 완료되었습니다!\n\n---\n\n",
+        "final_result_header": "### 🌟 면접관 프로필 + 면접 질문 + 질문 의도",
+        "prompt_context": """{company_name}의 {job_title} 채용에 대한 [면접 상황]을 아래 양식에 맞게 사실에 기반하여 구체적으로 작성해 주세요.
+
+[면접 상황]
+- 회사명: {company_name}
+- 회사 소개: (회사의 비전, 문화, 주력 사업 등을 간략히 서술)
+- 채용 직무: {job_title}
+- 핵심 요구 역량: (해당 직무에 필요한 기술 스택, 소프트 스킬 등을 3-4가지 서술)""",
+        "prompt_personas": """{company_name}의 {job_title} 직무 면접관 {num_interviewers}명의 페르소나를 생성해 주세요. 각 페르소나는 직책, 경력, 성격, 주요 질문 스타일이 드러나도록 구체적으로 묘사해야 합니다.
+
+[페르소나 생성 예시]
+1. 박준형 이사 (40대 후반): 20년차 개발자 출신으로 현재 기술 총괄. 기술의 깊이와 문제 해결 과정을 집요하게 파고드는 스타일.
+2. 최유진 팀장 (30대 중반): 실무 팀의 리더. 협업 능력과 커뮤니케이션, 컬처핏을 중요하게 생각하며, 경험 기반의 질문을 주로 던짐.""",
+        "prompt_final": """당신은 지금부터 면접 질문 생성 AI입니다. 아래 주어진 [면접 정보]를 완벽하게 숙지하고, 최고의 면접 질문을 만들어야 합니다.
+
+[면접 정보]
+1. 면접 상황
+{context_info}
+
+2. 면접관 구성
+{interviewer_personas}
+
+3. 지원자 정보 (자기소개서/포트폴리오 원문)
+{resume_text}
+
+[수행 과제]
+위 [면접 정보]에 기반하여, 각 면접관의 역할과 스타일에 맞는 맞춤형 면접 질문을 면접관별로 {questions_per_interviewer}개씩 생성해 주세요.
+- (지원자 정보)의 활동과 관련된 질문을 반드시 1개 이상 포함해야 합니다.
+- 질문 뒤에는 "(의도: ...)" 형식으로 질문의 핵심 의도를 간략히 덧붙여 주세요.
+- 최종 결과물은 면접관별로 구분하여 깔끔하게 정리된 형태로만 출력해 주세요.""",
+        "prompt_real_final": """아래에서 영어를 모두 한국어로 번역해주세요.
+아래에서 중복되는 내용을 지우고 '면접관 페르소나'와 '면접질문'들만 남기세요.
+---
+{full_content_to_summarize}
+---""",
+    },
+    'en': {
+        "title": "FastHire | Custom Interview Solution",
+        "subtitle": "Generates tailored interview questions based on the company, job title, and applicant's PDF.<br>Different types of interviewers will ask you questions depending on the number selected.",
+        "company_label": "1. Company Name",
+        "company_placeholder": "e.g., Google",
+        "job_label": "2. Job Title",
+        "job_placeholder": "e.g., Software Engineer",
+        "interviewer_count_label": "3. Number of Interviewers",
+        "question_count_label": "4. Questions per Interviewer",
+        "upload_button_text": "5. Upload Resume/Portfolio PDF",
+        "upload_status_label": "Upload Status",
+        "upload_success": "✅ File uploaded successfully!",
+        "privacy_notice": "<div style='text-align: center; color: gray; font-size: 0.8em; margin-top: 20px; margin-bottom: 10px;'>*Your personal information will be securely deleted after the service purpose is fulfilled.*</div>",
+        "generate_button_text": "Generate Interview Questions",
+        "output_label": "Process and Results",
+        "contact_html": """<div style='display: flex; justify-content: space-between; align-items: flex-start; color: gray; font-size: 0.9em; margin-top: 40px; margin-bottom: 30px;'><div style='text-align: left; max-width: 70%;'>Get <strong>interview questions from various interviewers</strong> based on company name, job title, and your PDF resume.<br>We provide complete support from tailored <strong>interview preparation</strong>, <strong>resume-based questions</strong>, preparing for <strong>various question types</strong>, to <strong>job search readiness</strong>.</div><div style='text-align: right; white-space: nowrap;'>Contact us: eeooeeforbiz@gmail.com</div></div>""",
+        "error_all_fields": "Please enter the company name, job title, and upload a PDF file.",
+        "error_not_pdf": "❌ Error: Only PDF files can be uploaded.",
+        "log_step1_start": "➡️ Step 1: Analyzing company and job information...",
+        "log_step1_fail": "❌ Step 1 Failed: ",
+        "log_step1_done": "✅ Step 1 Complete.\n\n",
+        "log_step2_start": "➡️ Step 2: Creating virtual interviewers...",
+        "log_step2_fail": "❌ Step 2 Failed: ",
+        "log_step2_done": "✅ Step 2 Complete.\n\n",
+        "log_step3_start": "➡️ Step 3: Generating final interview questions... Please wait.",
+        "log_step3_fail": "❌ Step 3 Failed: ",
+        "log_step3_done": "✅ Step 3 Complete.\n\n",
+        "log_summary_start": "➡️ Extra Step: Summarizing the generated results...",
+        "log_summary_fail": "Failed to summarize the results.",
+        "log_all_done": "✅ All tasks are complete!\n\n---\n\n",
+        "final_result_header": "### 🌟 Interviewer Profiles + Interview Questions + Question Intent",
+        "prompt_context": """Please create a detailed [Interview Scenario] for the {job_title} position at {company_name}, based on facts, in the format below.
+
+[Interview Scenario]
+- Company Name: {company_name}
+- Company Introduction: (Briefly describe the company's vision, culture, and main business)
+- Hiring Position: {job_title}
+- Key Required Competencies: (List 3-4 technical skills and soft skills required for the position)""",
+        "prompt_personas": """Please create {num_interviewers} interviewer personas for the {job_title} position at {company_name}. Each persona should be described in detail, including their job title, career background, personality, and primary questioning style.
+
+[Persona Creation Example]
+1. Director Park (Late 40s): A 20-year veteran developer, now the Head of Technology. Known for digging deep into technical depth and problem-solving processes.
+2. Team Lead Choi (Mid 30s): Leader of the practical team. Emphasizes collaboration, communication, and culture fit, primarily asking experience-based questions.""",
+        "prompt_final": """You are now an interview question generation AI. You must perfectly understand the [Interview Information] provided below and create the best interview questions.
+
+[Interview Information]
+1. Interview Scenario
+{context_info}
+
+2. Interviewer Panel
+{interviewer_personas}
+
+3. Applicant Information (Original text from resume/portfolio)
+{resume_text}
+
+[Task to Perform]
+Based on the [Interview Information] above, generate {questions_per_interviewer} tailored interview questions for each interviewer, matching their role and style.
+- You must include at least one question related to the activities mentioned in the (Applicant Information).
+- After each question, briefly add the core intent of the question in the format "(Intent: ...)."
+- The final output should be presented in a neatly organized format, separated by interviewer.""",
+        "prompt_real_final": """Please remove any redundant information from the text below and leave only the 'Interviewer Personas' and 'Interview Questions'.
+---
+{full_content_to_summarize}
+---""",
+    }
+}
+
+# --- Google Analytics 스크립트 생성 ---
+FAVICON_URL = "https://i.imgur.com/hpUa5yb.jpeg"
+
 ga_script_html = f"""
-    <!-- SEO 메타 태그 -->
-    <meta name="description" content="FastHire | PDF 기반 맞춤형 면접 질문 생성 플랫폼. 회사와 직무를 입력하면 AI가 질문을 자동 생성합니다. 다양한 면접관한테 예시 질문을 받을 수 있습니다.">
-    <meta name="keywords" content="면접 질문 예시, AI 면접 질문, 면접 준비, 취준, 취직, FastHire">
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="FastHire | PDF-based custom interview question generation platform. AI automatically creates questions when you enter a company and job title. Get sample questions from various interviewers.">
+    <meta name="keywords" content="interview question examples, AI interview questions, interview prep, job search, FastHire">
     <meta name="author" content="FastHire">
 
-    <!-- Open Graph (OG) 태그 for Link Previews -->
-    <meta property="og:title" content="FastHire | 맞춤형 면접 질문을 드려요">
-    <meta property="og:description" content="회사, 직무, 이력서만으로 생성하는 나만의 맞춤형 면접 질문! 다양한 면접관에게 진짜 면접 질문을 받아보세요.">
+    <!-- Open Graph (OG) Tags for Link Previews -->
+    <meta property="og:title" content="FastHire | We provide custom interview questions">
+    <meta property="og:description" content="Create your own personalized interview questions with just a company, job title, and resume! Get real interview questions from a variety of interviewers.">
     <meta property="og:image" content="https://i.imgur.com/hpUa5yb.jpeg"> 
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="FastHire">
-"""
 
+    <!-- Favicon -->
+    <link rel="icon" href="{FAVICON_URL}">
+    <link rel="shortcut icon" href="{FAVICON_URL}">
+    <link rel="apple-touch-icon" href="{FAVICON_URL}">
+"""
 if GA_MEASUREMENT_ID:
     ga_script_html += f"""
     <!-- Google tag (gtag.js) -->
@@ -67,19 +214,17 @@ else:
     print("경고: GA_MEASUREMENT_ID 환경 변수가 설정되지 않아 Google Analytics가 비활성화되었습니다.")
 
 # --- 백엔드 함수 정의 ---
-def show_upload_feedback(file_obj):
+def show_upload_feedback(file_obj, lang):
     """파일이 업로드되면 확인 메시지를 반환하는 함수"""
     if file_obj is not None:
-        # 파일 객체가 존재하면 (업로드 성공 시) 메시지 반환
-        return "✅ 파일 업로드 완료!"
-    return "" # 파일이 없을 경우 빈 문자열 반환
+        return LANG_STRINGS[lang]['upload_success']
+    return ""
 
 def upload_to_gcs(bucket_name: str, source_file_path: str, destination_blob_name: str):
     """로컬 파일을 Google Cloud Storage 버킷에 업로드합니다."""
     if not storage_client:
         print("GCS 클라이언트가 초기화되지 않아 업로드를 건너뜁니다.")
         return
-
     try:
         bucket = storage_client.bucket(bucket_name)
         blob = bucket.blob(destination_blob_name)
@@ -87,7 +232,6 @@ def upload_to_gcs(bucket_name: str, source_file_path: str, destination_blob_name
         print(f"파일 '{source_file_path}'를(을) 버킷 '{bucket_name}'에 '{destination_blob_name}'(으)로 업로드했습니다.")
     except Exception as e:
         print(f"GCS 업로드 중 오류 발생: {e}")
-
 
 def extract_text_from_pdf(pdf_path: str) -> str:
     """PDF 파일에서 텍스트를 추출합니다."""
@@ -101,11 +245,9 @@ def extract_text_from_pdf(pdf_path: str) -> str:
     except Exception as e:
         return f"PDF 처리 중 오류 발생: {e}"
 
-def call_llm(prompt: str, chat_history: list, model: str = "lgai/exaone-deep-32b") -> str:
+def call_llm(prompt: str, chat_history: list, model: str) -> str:
     """Together.ai API를 호출하고, 실패 시 오류 메시지를 반환하며 대화 히스토리를 유지합니다."""
-    # 새로운 사용자 메시지를 기록
     chat_history.append({"role": "user", "content": prompt})
-
     try:
         response = client.chat.completions.create(
             model=model,
@@ -117,225 +259,192 @@ def call_llm(prompt: str, chat_history: list, model: str = "lgai/exaone-deep-32b
             return reply
         else:
             print("Warning: LLM returned an empty response.")
-            return "오류: LLM으로부터 비어 있는 응답을 받았습니다."
-
+            return "Error: LLM returned an empty response."
     except Exception as e:
         print(f"LLM API 호출 중 오류 발생: {e}")
-        return f"오류: LLM API 호출에 실패했습니다. ({e})"
+        return f"Error: LLM API call failed. ({e})"
 
-# --- [수정된 함수] ---
-def generate_interview_questions(company_name, job_title, pdf_file, num_interviewers, questions_per_interviewer):
-    """Gradio 인터페이스로부터 입력을 받아 면접 질문을 생성하고 요약하는 메인 함수"""
+# --- [수정된 메인 함수] ---
+def generate_interview_questions(company_name, job_title, pdf_file, num_interviewers, questions_per_interviewer, lang):
+    """Gradio 인터페이스로부터 입력을 받아 면접 질문을 생성하고 요약하는 메인 함수 (다국어 지원)"""
+    
+    # 현재 언어에 맞는 텍스트 로드
+    T = LANG_STRINGS[lang]
+    model = MODELS[lang]
 
     if not all([company_name, job_title, pdf_file]):
-        yield "회사명, 직무명, PDF 파일을 모두 입력해주세요."
+        yield T['error_all_fields']
         return
         
-    # 파일 확장자 검사
     pdf_path = pdf_file.name
     if not pdf_path.lower().endswith(".pdf"):
-        yield "❌ 오류: PDF 파일만 업로드할 수 있습니다."
+        yield T['error_not_pdf']
         return
 
-    # --- GCS 업로드 로직 추가 ---
-    pdf_path = pdf_file.name # Gradio가 임시 저장한 파일 경로
-
     if GCS_BUCKET_NAME:
-        # 파일명이 겹치지 않도록 고유한 이름 생성 (예: 20250731-140000-uuid-원본파일이름.pdf)
         original_filename = os.path.basename(pdf_file.name)
         unique_id = str(uuid.uuid4().hex)[:8]
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         destination_blob_name = f"{timestamp}-{unique_id}-{original_filename}"
-
         upload_to_gcs(GCS_BUCKET_NAME, pdf_path, destination_blob_name)
-    # --- GCS 업로드 로직 끝 ---
 
     output_log = ""
     resume_text = extract_text_from_pdf(pdf_path)
-    if resume_text.startswith("오류"):
-        yield f"PDF 처리 실패: {resume_text}"
+    if resume_text.startswith("오류") or resume_text.startswith("Error"):
+        yield f"PDF Processing Failed: {resume_text}"
         return
 
-    output_log += "➡️ 1단계: 회사 및 직무 정보 분석 중...\n"
+    output_log += T['log_step1_start'] + "\n"
     yield output_log
-
-    prompt_context = f"""
-    {company_name}의 {job_title} 채용에 대한 [면접 상황]을 아래 양식에 맞게 사실에 기반하여 구체적으로 작성해 주세요.
-
-    [면접 상황]
-    - 회사명: {company_name}
-    - 회사 소개: (회사의 비전, 문화, 주력 사업 등을 간략히 서술)
-    - 채용 직무: {job_title}
-    - 핵심 요구 역량: (해당 직무에 필요한 기술 스택, 소프트 스킬 등을 3-4가지 서술)
-    """
+    
+    prompt_context = T['prompt_context'].format(company_name=company_name, job_title=job_title)
     chat_history = []
-    context_info = call_llm(prompt_context, chat_history)
-    if context_info.startswith("오류"):
-        yield output_log + f"❌ 1단계 실패: {context_info}"
+    context_info = call_llm(prompt_context, chat_history, model)
+    if context_info.startswith("오류") or context_info.startswith("Error"):
+        yield output_log + T['log_step1_fail'] + context_info
         return
-    output_log += "✅ 1단계 완료.\n\n"
+    output_log += T['log_step1_done']
     yield output_log
     time.sleep(1)
 
-    output_log += "➡️ 2단계: 가상 면접관 생성 중...\n"
+    output_log += T['log_step2_start'] + "\n"
     yield output_log
-
-    prompt_personas = f"""
-    {company_name}의 {job_title} 직무 면접관 {num_interviewers}명의 페르소나를 생성해 주세요. 각 페르소나는 직책, 경력, 성격, 주요 질문 스타일이 드러나도록 구체적으로 묘사해야 합니다.
-
-    [페르소나 생성 예시]
-    1. 박준형 이사 (40대 후반): 20년차 개발자 출신으로 현재 기술 총괄. 기술의 깊이와 문제 해결 과정을 집요하게 파고드는 스타일.
-    2. 최유진 팀장 (30대 중반): 실무 팀의 리더. 협업 능력과 커뮤니케이션, 컬처핏을 중요하게 생각하며, 경험 기반의 질문을 주로 던짐.
-    """
-    interviewer_personas = call_llm(prompt_personas, chat_history)
-    if interviewer_personas.startswith("오류"):
-        yield output_log + f"❌ 2단계 실패: {interviewer_personas}"
+    
+    prompt_personas = T['prompt_personas'].format(company_name=company_name, job_title=job_title, num_interviewers=num_interviewers)
+    interviewer_personas = call_llm(prompt_personas, chat_history, model)
+    if interviewer_personas.startswith("오류") or interviewer_personas.startswith("Error"):
+        yield output_log + T['log_step2_fail'] + interviewer_personas
         return
-    output_log += "✅ 2단계 완료.\n\n"
+    output_log += T['log_step2_done']
     yield output_log
     time.sleep(1)
 
-    output_log += "➡️ 3단계: 최종 면접 질문 생성 중... 잠시만 기다려주세요.\n"
+    output_log += T['log_step3_start'] + "\n"
     yield output_log
 
-    prompt_final = f"""
-    당신은 지금부터 면접 질문 생성 AI입니다. 아래 주어진 [면접 정보]를 완벽하게 숙지하고, 최고의 면접 질문을 만들어야 합니다.
-
-    [면접 정보]
-    1. 면접 상황
-    {context_info}
-
-    2. 면접관 구성
-    {interviewer_personas}
-
-    3. 지원자 정보 (자기소개서/포트폴리오 원문)
-    {resume_text}
-
-    [수행 과제]
-    위 [면접 정보]에 기반하여, 각 면접관의 역할과 스타일에 맞는 맞춤형 면접 질문을 면접관별로 {questions_per_interviewer}개씩 생성해 주세요.
-    - (지원자 정보)의 활동과 관련된 질문을 반드시 1개 이상 포함해야 합니다.
-    - 질문 뒤에는 "(의도: ...)" 형식으로 질문의 핵심 의도를 간략히 덧붙여 주세요.
-    - 최종 결과물은 면접관별로 구분하여 깔끔하게 정리된 형태로만 출력해 주세요.
-    """
-    final_questions_raw = call_llm(prompt_final, chat_history)
-    if final_questions_raw.startswith("오류"):
-        yield output_log + f"❌ 3단계 실패: {final_questions_raw}"
+    prompt_final = T['prompt_final'].format(
+        context_info=context_info,
+        interviewer_personas=interviewer_personas,
+        resume_text=resume_text,
+        questions_per_interviewer=questions_per_interviewer
+    )
+    final_questions_raw = call_llm(prompt_final, chat_history, model)
+    if final_questions_raw.startswith("오류") or final_questions_raw.startswith("Error"):
+        yield output_log + T['log_step3_fail'] + final_questions_raw
         return
-    
-    output_log += "✅ 3단계 완료.\n\n"
+    output_log += T['log_step3_done']
     yield output_log
     time.sleep(1)
 
-
-    # --- [요청사항 반영] 추가 단계: 생성된 결과 요약 ---
-    output_log += "➡️ 추가 단계: 생성된 결과 요약 중...\n"
+    output_log += T['log_summary_start'] + "\n"
     yield output_log
 
-    # 요약할 원본 텍스트를 구성 (페르소나 + 질문)
-    full_content_to_summarize = f""" 
-    [면접관 페르소나]
-    {interviewer_personas}
+    full_content_to_summarize = f"[Interviewer Personas]\n{interviewer_personas}\n\n[Generated Interview Questions]\n{final_questions_raw}"
+    prompt_real_final = T['prompt_real_final'].format(full_content_to_summarize=full_content_to_summarize)
+    summarized_result = call_llm(prompt_real_final, chat_history, model)
+    if summarized_result.startswith("오류") or summarized_result.startswith("Error"):
+        summarized_result = T['log_summary_fail']
 
-    [생성된 면접 질문]
-    {final_questions_raw}
-    """
-
-    # 요약을 위한 새로운 프롬프트
-    prompt_real_final = f"""
-    아래에서 영어를 모두 한국어로 번역해주세요.
-    아래에서 중복되는 내용을 지우고 '면접관 페르소나'와 '면접질문'들만 남기세요.
-    ---
-    {full_content_to_summarize}
-    ---
-    
-    """
-
-    summarized_result = call_llm(prompt_real_final, chat_history)
-    if summarized_result.startswith("오류"):
-        # 요약에 실패하더라도 원본 결과는 보여주기 위해, 오류 메시지만 추가
-        summarized_result = "결과를 요약하는 데 실패했습니다."
-    
-    # --- 최종 결과물 구성 ---
-    final_result = f"""
----
-
-### 🌟 면접관 프로필 + 면접 질문 + 질문 의도
-
-{summarized_result}
-"""
-
-    output_log += "✅ 모든 작업이 완료되었습니다!\n\n---\n\n" + final_result
+    final_result = f"{T['final_result_header']}\n\n{summarized_result}"
+    output_log += T['log_all_done'] + final_result
     yield output_log
 
+# --- [신규] UI 언어 변경 함수 ---
+def update_ui_language(lang_choice):
+    lang_key = 'en' if lang_choice == 'English' else 'ko'
+    T = LANG_STRINGS[lang_key]
+    
+    # 모든 UI 컴포넌트의 속성을 한 번에 업데이트하여 반환
+    return (
+        lang_key, # lang_state 업데이트
+        gr.update(value=T['title']),
+        gr.update(value=T['subtitle']),
+        gr.update(label=T['company_label'], placeholder=T['company_placeholder']),
+        gr.update(label=T['job_label'], placeholder=T['job_placeholder']),
+        gr.update(label=T['interviewer_count_label']),
+        gr.update(label=T['question_count_label']),
+        gr.update(value=T['upload_button_text']),
+        gr.update(label=T['upload_status_label']),
+        gr.update(value=T['privacy_notice']),
+        gr.update(value=T['generate_button_text']),
+        gr.update(label=T['output_label']),
+        gr.update(value=T['contact_html'])
+    )
 
 # --- Gradio UI 구성 ---
 css = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic&display=swap');
-
-* {
-    font-family: 'Nanum Gothic', sans-serif !important;
+body, * {
+    font-family: 'Nanum Gothic', 'Arial', sans-serif !important;
 }
 </style>
 """
 
-favicon_path = "logo2.jpg" 
-
-with gr.Blocks(title="수많은 면접관들의 진짜 면접 질문 받기", theme=gr.themes.Soft(), head=ga_script_html) as demo:
+with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.themes.Soft(), head=ga_script_html) as demo:
+    # 언어 상태를 저장할 보이지 않는 컴포넌트
+    lang_state = gr.State("ko")
+    
     gr.HTML(css)
-    gr.Markdown("## FastHire | 맞춤형 면접 솔루션")
-    gr.Markdown("회사, 직무, 지원자의 PDF를 바탕으로 맞춤형 면접 질문을 생성합니다. 모든 정보를 입력하고 '생성하기' 버튼을 눌러주세요.")
+    
+    with gr.Row(elem_id="header_row"):
+        # 제목과 언어 선택기를 한 줄에 배치
+        title_md = gr.Markdown("## " + LANG_STRINGS['ko']['title'])
+        lang_selector = gr.Radio(
+            ["한국어", "English"], 
+            value="한국어", 
+            label="Language", 
+            show_label=False,
+            interactive=True,
+            # 오른쪽 정렬을 위한 CSS 추가
+            elem_id="language_selector"
+        )
+    
+    subtitle_md = gr.Markdown(LANG_STRINGS['ko']['subtitle'])
 
     with gr.Row():
-        company_name = gr.Textbox(label="1. 회사명", placeholder="예: 네이버웹툰")
-        job_title = gr.Textbox(label="2. 채용 직무명", placeholder="예: 백엔드 개발자")
+        company_name = gr.Textbox(label=LANG_STRINGS['ko']['company_label'], placeholder=LANG_STRINGS['ko']['company_placeholder'])
+        job_title = gr.Textbox(label=LANG_STRINGS['ko']['job_label'], placeholder=LANG_STRINGS['ko']['job_placeholder'])
     
     with gr.Row():
-        num_interviewers = gr.Slider(label="3. 면접관 수", minimum=1, maximum=5, value=2, step=1)
-        questions_per_interviewer = gr.Slider(label="4. 면접관 별 질문 개수", minimum=1, maximum=5, value=3, step=1)
+        num_interviewers = gr.Slider(label=LANG_STRINGS['ko']['interviewer_count_label'], minimum=1, maximum=5, value=2, step=1)
+        questions_per_interviewer = gr.Slider(label=LANG_STRINGS['ko']['question_count_label'], minimum=1, maximum=5, value=3, step=1)
 
-    pdf_file = gr.UploadButton("5. 이력서 및 포트폴리오 PDF 업로드", file_types=[".pdf"])
-    upload_feedback_box = gr.Textbox(label="업로드 상태", interactive=False)
+    pdf_file = gr.UploadButton(LANG_STRINGS['ko']['upload_button_text'], file_types=[".pdf"])
+    upload_feedback_box = gr.Textbox(label=LANG_STRINGS['ko']['upload_status_label'], interactive=False)
 
     pdf_file.upload(
         fn=show_upload_feedback,
-        inputs=[pdf_file],
+        inputs=[pdf_file, lang_state],
         outputs=[upload_feedback_box]
     )
 
-    # ✅ 개인정보 문구는 생성 버튼 위에 위치 (기존처럼 유지)
-    gr.Markdown(
-        """
-        <div style='text-align: center; color: gray; font-size: 0.8em; margin-top: 20px; margin-bottom: 10px;'>
-            *고객의 개인정보는 서비스 제공 목적 달성 후 안전하게 삭제됩니다*
-        </div>
-        """
+    privacy_notice_html = gr.HTML(LANG_STRINGS['ko']['privacy_notice'])
+    generate_button = gr.Button(LANG_STRINGS['ko']['generate_button_text'], variant="primary")
+    output_textbox = gr.Textbox(label=LANG_STRINGS['ko']['output_label'], lines=20, interactive=False, show_copy_button=True)
+    
+    contact_html = gr.HTML(LANG_STRINGS['ko']['contact_html'])
+
+    # --- 이벤트 리스너 연결 ---
+
+    # 언어 선택기 변경 이벤트
+    lang_selector.select(
+        fn=update_ui_language,
+        inputs=[lang_selector],
+        outputs=[
+            lang_state, title_md, subtitle_md,
+            company_name, job_title, num_interviewers, questions_per_interviewer,
+            pdf_file, upload_feedback_box, privacy_notice_html, generate_button,
+            output_textbox, contact_html
+        ]
     )
-
-    generate_button = gr.Button("면접 질문 생성하기", variant="primary")
-    output_textbox = gr.Textbox(label="생성 과정 및 결과", lines=20, interactive=False, show_copy_button=True)
-
+    
+    # 질문 생성 버튼 클릭 이벤트
     generate_button.click(
         fn=generate_interview_questions,
-        inputs=[company_name, job_title, pdf_file, num_interviewers, questions_per_interviewer],
+        inputs=[company_name, job_title, pdf_file, num_interviewers, questions_per_interviewer, lang_state],
         outputs=output_textbox
     )
 
-    # ✅ Contact us 및 안내 문구는 맨 아래로 이동
-    gr.HTML(
-        """
-        <div style='display: flex; justify-content: space-between; align-items: flex-start; color: gray; font-size: 0.9em; margin-top: 40px; margin-bottom: 30px;'>
-            <div style='text-align: left; max-width: 70%;'>
-                회사명, 직무명, PDF 이력서를 기반으로 <strong>다양한 면접관한테 면접 질문을</strong> 받을 수 있습니다.<br>
-                맞춤형 <strong>면접 준비</strong>, <strong>자기소개서 기반 질문</strong>, <strong>다양한 형태의 질문 대비</strong>, <strong>취업 대비</strong>까지 완벽하게 지원합니다.
-            </div>
-            <div style='text-align: right; white-space: nowrap;'>
-                Contact us: eeooeeforbiz@gmail.com
-            </div>
-        </div>
-        """
-    )
-
-
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", favicon_path=favicon_path, server_port=int(os.environ.get('PORT', 7860)))
+    demo.launch(server_name="0.0.0.0", server_port=int(os.environ.get('PORT', 7860)))
