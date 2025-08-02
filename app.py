@@ -39,7 +39,7 @@ except Exception as e:
 # --- [신규] LLM 모델 정의 ---
 MODELS = {
     'ko': 'lgai/exaone-deep-32b',
-    'en': 'meta-llama/Llama-3-70b-chat-hf' # 영어권에서 성능이 좋은 Llama 모델
+    'en': 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free' # 영어권에서 성능이 좋은 Llama 모델
 }
 
 # --- [신규] 다국어 지원을 위한 텍스트 관리 ---
