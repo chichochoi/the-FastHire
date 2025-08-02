@@ -354,15 +354,17 @@ def update_ui_language(lang_choice):
     lang_key = 'en' if lang_choice == 'English' else 'ko'
     T = LANG_STRINGS[lang_key]
     
+    # 반환 값의 첫 번째 항목을 lang_state 객체에서 lang_key 변수로 수정합니다.
+    # 이렇게 해야 lang_state의 "값"이 'ko' 또는 'en'으로 올바르게 업데이트됩니다.
     return (
-        lang_state, # lang_state 업데이트
+        lang_key,  # <--- 이렇게 수정!
         gr.update(value=T['title']),
         gr.update(value=T['subtitle']),
         gr.update(label=T['company_label'], placeholder=T['company_placeholder']),
         gr.update(label=T['job_label'], placeholder=T['job_placeholder']),
         gr.update(label=T['interviewer_count_label']),
         gr.update(label=T['question_count_label']),
-        gr.update(label=T['upload_button_text']), # <--- 이 부분을 label 업데이트로 수정
+        gr.update(label=T['upload_button_text']),
         gr.update(label=T['upload_status_label']),
         gr.update(value=T['privacy_notice']),
         gr.update(value=T['generate_button_text']),
