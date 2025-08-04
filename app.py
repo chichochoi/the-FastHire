@@ -351,10 +351,13 @@ def generate_interview_questions(company_name, job_title, pdf_file, num_intervie
     output_log += T['log_all_done'] + final_result
     yield output_log
 
-# --- [신규] UI 언어 변경 함수 ---
+# --- [수정된 UI 언어 변경 함수] ---
 def update_ui_language(lang_choice):
     lang_key = 'en' if lang_choice == 'English' else 'ko'
     T = LANG_STRINGS[lang_key]
+
+    # 실시간 접속자 수 HTML을 즉시 업데이트하기 위해 추가
+    updated_live_users_html = update_live_users(lang_choice)
     
     return (
         lang_key,
@@ -369,7 +372,9 @@ def update_ui_language(lang_choice):
         gr.update(value=T['privacy_notice']),
         gr.update(value=T['generate_button_text']),
         gr.update(label=T['output_label']),
-        gr.update(value=T['contact_html'])
+        gr.update(value=T['contact_html']),
+        # live_users 컴포넌트에 전달할 업데이트 값을 추가
+        gr.update(value=updated_live_users_html)
     )
 
 # --- 실시간 접속자 수 업데이트 함수 (제너레이터로 수정) ---
@@ -480,7 +485,8 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
             lang_state, title_md, subtitle_md,
             company_name, job_title, num_interviewers, questions_per_interviewer,
             pdf_file, upload_feedback_box, privacy_notice_html, generate_button,
-            output_textbox, contact_html
+            output_textbox, contact_html,
+            live_users  # live_users 컴포넌트를 출력 대상에 추가
         ]
     )
 
