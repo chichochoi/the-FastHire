@@ -487,7 +487,7 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
     live_users_refresh_button.click(
         fn=update_live_users,
         inputs=[lang_selector], # 항상 최신 언어 선택 값을 입력으로 받음
-        outputs=[live_users_display]
+        outputs=[live_users]
     )
 # demo.load() 이벤트를 아래와 같이 수정합니다.
 demo.load(
