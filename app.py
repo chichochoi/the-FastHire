@@ -473,8 +473,7 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
     demo.load(
         fn=update_live_users_stream,
         inputs=None,
-        outputs=[live_users_display],
-        every=3  # 3초마다 함수를 실행
+        outputs=[live_users_display]
     )
     lang_selector.select(
         fn=update_ui_language,
