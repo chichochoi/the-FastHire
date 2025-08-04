@@ -432,10 +432,8 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
         title_md = gr.Markdown(LANG_STRINGS['ko']['title'])
 
         # 오른쪽 상단 요소들을 담을 컨테이너 추가
-        with gr.Row(elem_id="right_header_container"):
-            # 실시간 접속자 수를 표시할 HTML 컴포넌트 추가
-            live_users_display = gr.HTML()
-            live_users_refresh_button = gr.Button("Refresh", elem_id="live_users_refresh_button", visible=False)
+    with gr.Row(visible=False): # Row 자체를 보이지 않게 처리할 수도 있습니다.
+        live_users_refresh_button = gr.Button("Refresh", elem_id="live_users_refresh_button")
 
             lang_selector = gr.Radio(
                 ["한국어", "English"],
@@ -491,23 +489,39 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
         inputs=[lang_selector], # 항상 최신 언어 선택 값을 입력으로 받음
         outputs=[live_users_display]
     )
-    demo.load(
-        None, None, None,  # fn, inputs, outputs는 None으로 설정
-        js="""
-        () => {
-            // 3초마다 'live_users_refresh_button'이라는 id를 가진 버튼을 클릭
-            setInterval(() => {
-                document.getElementById('live_users_refresh_button').click();
-            }, 3000);
+# demo.load() 이벤트를 아래와 같이 수정합니다.
+demo.load(
+    None, None, None,  # fn, inputs, outputs는 None으로 설정
+    js="""
+    () => {
+        const refresh_button_id = 'live_users_refresh_button';
+
+        // 버튼 클릭을 실행하는 함수를 정의합니다.
+        function trigger_refresh() {
+            // Gradio 앱의 DOM에서 버튼 요소를 찾습니다.
+            // querySelector를 사용하면 더 복잡한 선택도 가능합니다. 여기선 getElementById로 충분합니다.
+            const refresh_button = document.getElementById(refresh_button_id);
             
-            // 페이지 로드 후 즉시 한 번 클릭 (최초 로딩 시 값을 표시하기 위함)
-            // 이 부분을 setTimeout으로 감싸서 Gradio UI가 완전히 렌더링될 시간을 줍니다.
-            setTimeout(() => {
-                document.getElementById('live_users_refresh_button').click();
-            }, 500); // 0.5초 후 실행
+            // 버튼이 존재하는지 반드시 확인한 후 클릭합니다. (핵심 안정성 로직)
+            if (refresh_button) {
+                refresh_button.click();
+                // 브라우저 개발자 도구(F12) 콘솔에서 확인하기 위한 로그
+                console.log('Live users refresh button clicked.'); 
+            } else {
+                // 버튼을 찾지 못했을 경우의 에러 로그
+                console.error('Live users refresh button not found in DOM.');
+            }
         }
-        """
-    )
+
+        // 페이지가 완전히 로드된 후, 첫 업데이트를 위해 한 번 실행합니다.
+        // 약간의 지연(500ms)을 주어 Gradio UI가 렌더링될 시간을 확보합니다.
+        setTimeout(trigger_refresh, 500);
+
+        // 그 다음부터 3초 간격으로 주기적으로 버튼 클릭을 실행합니다.
+        setInterval(trigger_refresh, 3000);
+    }
+    """
+)
 
     generate_button.click(
         fn=generate_interview_questions,
