@@ -429,7 +429,7 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
         # 오른쪽 상단 요소들을 담을 컨테이너 추가
         with gr.Row(elem_id="right_header_container"):
             # 실시간 접속자 수를 표시할 HTML 컴포넌트 추가
-            live_users_display = gr.HTML(value=update_live_users())
+            live_users_display = gr.HTML(value=update_live_users_stream())
 
             lang_selector = gr.Radio(
                 ["한국어", "English"],
