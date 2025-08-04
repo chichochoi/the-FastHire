@@ -73,6 +73,7 @@ LANG_STRINGS = {
         "log_summary_start": "➡️ 추가 단계: 생성된 결과 요약 중...",
         "log_summary_fail": "결과를 요약하는 데 실패했습니다.",
         "log_all_done": "✅ 모든 작업이 완료되었습니다!\n\n---\n\n",
+        "live_users": "실시간 접속자 수: {user_count}",
         "final_result_header": "### 🌟 면접관 프로필 + 면접 질문 + 질문 의도",
         "prompt_context": """{company_name}의 {job_title} 채용에 대한 [면접 상황]을 아래 양식에 맞게 사실에 기반하여 구체적으로 작성해 주세요.
 
@@ -139,6 +140,7 @@ LANG_STRINGS = {
         "log_summary_start": "➡️ Extra Step: Summarizing the generated results...",
         "log_summary_fail": "Failed to summarize the results.",
         "log_all_done": "✅ All tasks are complete!\n\n---\n\n",
+        "live_users": "Live Users: {user_count}",
         "final_result_header": "### 🌟 Interviewer Profiles + Interview Questions + Question Intent",
         "prompt_context": """Please create a detailed [Interview Scenario] for the {job_title} position at {company_name}, based on facts, in the format below.
 
@@ -372,18 +374,23 @@ def update_ui_language(lang_choice):
     )
 
 # --- 실시간 접속자 수 업데이트 함수 (제너레이터로 수정) ---
-def update_live_users_stream():
-    """무한 루프를 돌며 3초마다 업데이트된 HTML 콘텐츠를 yield합니다."""
+def update_live_users_stream(lang_choice):
+    """선택된 언어에 맞춰 실시간 접속자 수를 스트리밍하는 함수"""
+    lang_key = 'en' if lang_choice == 'English' else 'ko'
+    T = LANG_STRINGS[lang_key]
+
     while True:
         user_count = int(np.random.normal(loc=600, scale=50))
+        # 각 언어에 맞는 포맷 문자열을 사용하여 텍스트를 생성
+        live_user_text = T['live_users'].format(user_count=user_count)
         html_content = f"""
         <div style="display: flex; align-items: center;">
             <span class="green-dot"></span>
-            <span>실시간 접속자 수: {user_count}</span>
+            <span>{live_user_text}</span>
         </div>
         """
         yield html_content
-        time.sleep(3) # 3초 대기
+        time.sleep(3)
 
 
 # --- Gradio UI 구성 ---
@@ -472,7 +479,7 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
     
     demo.load(
         fn=update_live_users_stream,
-        inputs=None,
+        inputs=[lang_selector], # lang_selector의 현재 값을 함수에 전달
         outputs=[live_users_display]
     )
     lang_selector.select(
@@ -484,6 +491,11 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
             pdf_file, upload_feedback_box, privacy_notice_html, generate_button,
             output_textbox, contact_html
         ]
+    )
+    lang_selector.select(
+        fn=update_live_users_stream,
+        inputs=[lang_selector], # 변경된 lang_selector의 값을 함수에 전달
+        outputs=[live_users_display]
     )
 
     generate_button.click(
