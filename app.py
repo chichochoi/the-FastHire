@@ -372,16 +372,18 @@ def update_ui_language(lang_choice):
     )
 
 # --- 실시간 접속자 수 업데이트 함수 (제너레이터로 수정) ---
-def update_live_users():
-    """실시간 접속자 수를 계산하여 HTML 콘텐츠를 반환하는 일반 함수입니다."""
-    user_count = int(np.random.normal(loc=600, scale=50))
-    html_content = f"""
-    <div style="display: flex; align-items: center;">
-        <span class="green-dot"></span>
-        <span>실시간 접속자 수: {user_count}</span>
-    </div>
-    """
-    return html_content
+def update_live_users_stream():
+    """무한 루프를 돌며 3초마다 업데이트된 HTML 콘텐츠를 yield합니다."""
+    while True:
+        user_count = int(np.random.normal(loc=600, scale=50))
+        html_content = f"""
+        <div style="display: flex; align-items: center;">
+            <span class="green-dot"></span>
+            <span>실시간 접속자 수: {user_count}</span>
+        </div>
+        """
+        yield html_content
+        time.sleep(3) # 3초 대기
 
 
 # --- Gradio UI 구성 ---
@@ -469,7 +471,7 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
     # --- 이벤트 리스너 연결 ---
     
     demo.load(
-        fn=update_live_users,
+        fn=update_live_users_stream,
         inputs=None,
         outputs=[live_users_display],
         every=3  # 3초마다 함수를 실행
@@ -493,4 +495,4 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
 
 if __name__ == "__main__":
     # share=True 옵션을 추가하여 외부 접속용 URL을 생성합니다.
-    demo.launch(server_name="0.0.0.0", server_port=int(os.environ.get('PORT', 7860)), share=True)
+    demo.launch(server_name="0.0.0.0", server_port=int(os.environ.get('PORT', 7860)))
