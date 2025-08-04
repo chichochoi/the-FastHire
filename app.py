@@ -435,13 +435,13 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
     with gr.Row(visible=False): # Row 자체를 보이지 않게 처리할 수도 있습니다.
         live_users_refresh_button = gr.Button("Refresh", elem_id="live_users_refresh_button")
 
-            lang_selector = gr.Radio(
-                ["한국어", "English"],
-                value="한국어",
-                label="Language",
-                show_label=False,
-                interactive=True,
-            )
+        lang_selector = gr.Radio(
+            ["한국어", "English"],
+            value="한국어",
+            label="Language",
+            show_label=False,
+            interactive=True,
+        )
 
     subtitle_md = gr.Markdown(LANG_STRINGS['ko']['subtitle'])
 
