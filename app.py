@@ -15,9 +15,8 @@ GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
 GA_MEASUREMENT_ID = os.getenv("GA_MEASUREMENT_ID")
 
 if not api_key:
-    print("오류: TOGETHER_API_KEY 환경 변수가 설정되지 않았습니다.")
-    # 로컬 테스트용
-    api_key = "e5cba29e90c8626bc5fe5473fad9966c2f026ec1a0eab6a238f53c12f71a4ddd"
+    print("오류: TOGETHER_API_KEY 환경 변수가 설정되지 않았습니다. 프로그램을 종료합니다.")
+    exit() # API 키가 없으면 실행 중단
 
 # GCS 클라이언트는 한번만 초기화하는 것이 효율적입니다.
 storage_client = None
@@ -429,7 +428,7 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
         # 오른쪽 상단 요소들을 담을 컨테이너 추가
         with gr.Row(elem_id="right_header_container"):
             # 실시간 접속자 수를 표시할 HTML 컴포넌트 추가
-            live_users_display = gr.HTML(value=update_live_users_stream())
+            live_users_display = gr.HTML()
 
             lang_selector = gr.Radio(
                 ["한국어", "English"],
@@ -456,11 +455,6 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
         file_types=[".pdf"]
     )
     upload_feedback_box = gr.Textbox(label=LANG_STRINGS['ko']['upload_status_label'], interactive=False)
-
-    # (기존 함수들은 그대로 있다고 가정)
-    def show_upload_feedback(file, lang): return f"'{file.name}' 파일이 성공적으로 업로드되었습니다."
-    def update_ui_language(lang): return [lang] + [f"UI updated to {lang}"] * 10 # Placeholder
-    def generate_interview_questions(*args): return "면접 질문이 생성되었습니다." # Placeholder
 
     pdf_file.upload(
         fn=show_upload_feedback,
