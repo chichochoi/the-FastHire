@@ -388,6 +388,7 @@ def update_live_users(lang_choice):
         <span>{live_user_text}</span>
     </div>
     """
+    print(f"실시간 접속자 수 업데이트: {lang_choice}") # 디버깅용 print문
     return html_content
 
 
@@ -491,16 +492,19 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
         outputs=[live_users_display]
     )
     demo.load(
-        None, None, None,
+        None, None, None,  # fn, inputs, outputs는 None으로 설정
         js="""
         () => {
-            // 즉시 한 번 실행
-            document.getElementById('live_users_refresh_button').click();
-            
-            // 3초마다 주기적으로 실행
+            // 3초마다 'live_users_refresh_button'이라는 id를 가진 버튼을 클릭
             setInterval(() => {
                 document.getElementById('live_users_refresh_button').click();
             }, 3000);
+            
+            // 페이지 로드 후 즉시 한 번 클릭 (최초 로딩 시 값을 표시하기 위함)
+            // 이 부분을 setTimeout으로 감싸서 Gradio UI가 완전히 렌더링될 시간을 줍니다.
+            setTimeout(() => {
+                document.getElementById('live_users_refresh_button').click();
+            }, 500); // 0.5초 후 실행
         }
         """
     )
