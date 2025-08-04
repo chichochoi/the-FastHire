@@ -523,11 +523,11 @@ demo.load(
     """
 )
 
-    generate_button.click(
-        fn=generate_interview_questions,
-        inputs=[company_name, job_title, pdf_file, num_interviewers, questions_per_interviewer, lang_state],
-        outputs=output_textbox
-    )
+generate_button.click(
+    fn=generate_interview_questions,
+    inputs=[company_name, job_title, pdf_file, num_interviewers, questions_per_interviewer, lang_state],
+    outputs=output_textbox
+)
 
 if __name__ == "__main__":
     # share=True 옵션을 추가하여 외부 접속용 URL을 생성합니다.
