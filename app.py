@@ -6,6 +6,7 @@ import time
 import uuid  # 고유 파일명 생성을 위해 추가
 from google.cloud import storage  # GCS 연동을 위해 추가
 import numpy as np
+
 # --- 사전 설정 ---
 # Render 환경 변수에서 API 키를 안전하게 불러옵니다.
 api_key = os.getenv("TOGETHER_API_KEY")
@@ -355,10 +356,8 @@ def update_ui_language(lang_choice):
     lang_key = 'en' if lang_choice == 'English' else 'ko'
     T = LANG_STRINGS[lang_key]
     
-    # 반환 값의 첫 번째 항목을 lang_state 객체에서 lang_key 변수로 수정합니다.
-    # 이렇게 해야 lang_state의 "값"이 'ko' 또는 'en'으로 올바르게 업데이트됩니다.
     return (
-        lang_key,  # <--- 이렇게 수정!
+        lang_key,
         gr.update(value=T['title']),
         gr.update(value=T['subtitle']),
         gr.update(label=T['company_label'], placeholder=T['company_placeholder']),
@@ -380,15 +379,13 @@ def update_live_users(lang_choice):
     T = LANG_STRINGS[lang_key]
 
     user_count = int(np.random.normal(loc=600, scale=50))
-    # 각 언어에 맞는 포맷 문자열을 사용하여 텍스트를 생성
     live_user_text = T['live_users'].format(user_count=user_count)
     html_content = f"""
-    <div style="display: flex; align-items: center;">
+    <div style="display: flex; align-items: center; justify-content: flex-end;">
         <span class="green-dot"></span>
         <span>{live_user_text}</span>
     </div>
     """
-    print(f"실시간 접속자 수 업데이트: {lang_choice}") # 디버깅용 print문
     return html_content
 
 
@@ -404,14 +401,12 @@ body, * {
     justify-content: space-between;
     align-items: center;
 }
-/* 오른쪽 상단 요소(접속자 수, 언어 선택기)를 담을 컨테이너 스타일 */
 #right_header_container {
     display: flex;
     align-items: center;
     gap: 20px; /* 요소 사이의 간격 */
     margin-left: auto; /* 컨테이너를 오른쪽으로 밀어냄 */
 }
-/* 실시간 접속자 표시의 초록색 점 스타일 */
 .green-dot {
     display: inline-block;
     width: 10px;
@@ -428,21 +423,27 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
     lang_state = gr.State("ko")
     gr.HTML(css)
 
+    # --- FIX START: UI 레이아웃 수정 및 'live_users' 컴포넌트 정의 ---
     with gr.Row(elem_id="header_row"):
         title_md = gr.Markdown(LANG_STRINGS['ko']['title'])
 
-        # 오른쪽 상단 요소들을 담을 컨테이너 추가
-    with gr.Row(visible=False): # Row 자체를 보이지 않게 처리할 수도 있습니다.
+        with gr.Column(elem_id="right_header_container", scale=0.3): # 오른쪽 정렬을 위해 Column 사용
+             # 1. 'live_users'라는 이름의 HTML 컴포넌트를 정의하여 NameError를 해결합니다.
+            live_users = gr.HTML(update_live_users("한국어"))
+
+            lang_selector = gr.Radio(
+                ["한국어", "English"],
+                value="한국어",
+                label="Language",
+                show_label=False,
+                interactive=True,
+            )
+
+    # 2. JavaScript가 주기적으로 클릭할 숨겨진 버튼을 정의합니다.
+    with gr.Row(visible=False):
         live_users_refresh_button = gr.Button("Refresh", elem_id="live_users_refresh_button")
-
-        lang_selector = gr.Radio(
-            ["한국어", "English"],
-            value="한국어",
-            label="Language",
-            show_label=False,
-            interactive=True,
-        )
-
+    # --- FIX END ---
+    
     subtitle_md = gr.Markdown(LANG_STRINGS['ko']['subtitle'])
 
     with gr.Row():
@@ -471,9 +472,7 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
     output_textbox = gr.Textbox(label=LANG_STRINGS['ko']['output_label'], lines=20, interactive=False, show_copy_button=True)
     contact_html = gr.HTML(LANG_STRINGS['ko']['contact_html'])
 
-
     # --- 이벤트 리스너 연결 ---
-    
     lang_selector.select(
         fn=update_ui_language,
         inputs=[lang_selector],
@@ -484,51 +483,40 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
             output_textbox, contact_html
         ]
     )
+
+    # 이제 'live_users' 컴포넌트가 존재하므로 이 이벤트 리스너가 정상적으로 작동합니다.
     live_users_refresh_button.click(
         fn=update_live_users,
-        inputs=[lang_selector], # 항상 최신 언어 선택 값을 입력으로 받음
+        inputs=[lang_selector],
         outputs=[live_users]
     )
-# demo.load() 이벤트를 아래와 같이 수정합니다.
-demo.load(
-    None, None, None,  # fn, inputs, outputs는 None으로 설정
-    js="""
-    () => {
-        const refresh_button_id = 'live_users_refresh_button';
-
-        // 버튼 클릭을 실행하는 함수를 정의합니다.
-        function trigger_refresh() {
-            // Gradio 앱의 DOM에서 버튼 요소를 찾습니다.
-            // querySelector를 사용하면 더 복잡한 선택도 가능합니다. 여기선 getElementById로 충분합니다.
-            const refresh_button = document.getElementById(refresh_button_id);
-            
-            // 버튼이 존재하는지 반드시 확인한 후 클릭합니다. (핵심 안정성 로직)
-            if (refresh_button) {
-                refresh_button.click();
-                // 브라우저 개발자 도구(F12) 콘솔에서 확인하기 위한 로그
-                console.log('Live users refresh button clicked.'); 
-            } else {
-                // 버튼을 찾지 못했을 경우의 에러 로그
-                console.error('Live users refresh button not found in DOM.');
+    
+    demo.load(
+        None, None, None,
+        js="""
+        () => {
+            const refresh_button_id = 'live_users_refresh_button';
+            function trigger_refresh() {
+                const refresh_button = document.querySelector(`#${refresh_button_id} > button`);
+                if (refresh_button) {
+                    refresh_button.click();
+                } else {
+                    console.error('Live users refresh button not found in DOM.');
+                }
             }
+            // 페이지 로드 후 첫 업데이트 실행
+            setTimeout(trigger_refresh, 500);
+            // 3초마다 주기적으로 업데이트
+            setInterval(trigger_refresh, 3000);
         }
+        """
+    )
 
-        // 페이지가 완전히 로드된 후, 첫 업데이트를 위해 한 번 실행합니다.
-        // 약간의 지연(500ms)을 주어 Gradio UI가 렌더링될 시간을 확보합니다.
-        setTimeout(trigger_refresh, 500);
-
-        // 그 다음부터 3초 간격으로 주기적으로 버튼 클릭을 실행합니다.
-        setInterval(trigger_refresh, 3000);
-    }
-    """
-)
-
-generate_button.click(
-    fn=generate_interview_questions,
-    inputs=[company_name, job_title, pdf_file, num_interviewers, questions_per_interviewer, lang_state],
-    outputs=output_textbox
-)
+    generate_button.click(
+        fn=generate_interview_questions,
+        inputs=[company_name, job_title, pdf_file, num_interviewers, questions_per_interviewer, lang_state],
+        outputs=output_textbox
+    )
 
 if __name__ == "__main__":
-    # share=True 옵션을 추가하여 외부 접속용 URL을 생성합니다.
     demo.launch(server_name="0.0.0.0", server_port=int(os.environ.get('PORT', 7860)))
