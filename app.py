@@ -374,23 +374,21 @@ def update_ui_language(lang_choice):
     )
 
 # --- 실시간 접속자 수 업데이트 함수 (제너레이터로 수정) ---
-def update_live_users_stream(lang_choice):
-    """선택된 언어에 맞춰 실시간 접속자 수를 스트리밍하는 함수"""
+def update_live_users(lang_choice):
+    """선택된 언어에 맞춰 실시간 접속자 수를 표시하는 HTML을 반환하는 함수"""
     lang_key = 'en' if lang_choice == 'English' else 'ko'
     T = LANG_STRINGS[lang_key]
 
-    while True:
-        user_count = int(np.random.normal(loc=600, scale=50))
-        # 각 언어에 맞는 포맷 문자열을 사용하여 텍스트를 생성
-        live_user_text = T['live_users'].format(user_count=user_count)
-        html_content = f"""
-        <div style="display: flex; align-items: center;">
-            <span class="green-dot"></span>
-            <span>{live_user_text}</span>
-        </div>
-        """
-        yield html_content
-        time.sleep(3)
+    user_count = int(np.random.normal(loc=600, scale=50))
+    # 각 언어에 맞는 포맷 문자열을 사용하여 텍스트를 생성
+    live_user_text = T['live_users'].format(user_count=user_count)
+    html_content = f"""
+    <div style="display: flex; align-items: center;">
+        <span class="green-dot"></span>
+        <span>{live_user_text}</span>
+    </div>
+    """
+    return html_content
 
 
 # --- Gradio UI 구성 ---
@@ -436,6 +434,7 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
         with gr.Row(elem_id="right_header_container"):
             # 실시간 접속자 수를 표시할 HTML 컴포넌트 추가
             live_users_display = gr.HTML()
+            live_users_refresh_button = gr.Button("Refresh", elem_id="live_users_refresh_button", visible=False)
 
             lang_selector = gr.Radio(
                 ["한국어", "English"],
@@ -443,7 +442,6 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
                 label="Language",
                 show_label=False,
                 interactive=True,
-                # elem_id는 부모 컨테이너로 이동했으므로 여기서 제거
             )
 
     subtitle_md = gr.Markdown(LANG_STRINGS['ko']['subtitle'])
@@ -477,11 +475,6 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
 
     # --- 이벤트 리스너 연결 ---
     
-    demo.load(
-        fn=update_live_users_stream,
-        inputs=[lang_selector], # lang_selector의 현재 값을 함수에 전달
-        outputs=[live_users_display]
-    )
     lang_selector.select(
         fn=update_ui_language,
         inputs=[lang_selector],
@@ -492,10 +485,24 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
             output_textbox, contact_html
         ]
     )
-    lang_selector.select(
-        fn=update_live_users_stream,
-        inputs=[lang_selector], # 변경된 lang_selector의 값을 함수에 전달
+    live_users_refresh_button.click(
+        fn=update_live_users,
+        inputs=[lang_selector], # 항상 최신 언어 선택 값을 입력으로 받음
         outputs=[live_users_display]
+    )
+    demo.load(
+        None, None, None,
+        js="""
+        () => {
+            // 즉시 한 번 실행
+            document.getElementById('live_users_refresh_button').click();
+            
+            // 3초마다 주기적으로 실행
+            setInterval(() => {
+                document.getElementById('live_users_refresh_button').click();
+            }, 3000);
+        }
+        """
     )
 
     generate_button.click(
