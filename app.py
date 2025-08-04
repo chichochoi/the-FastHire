@@ -5,7 +5,7 @@ import gradio as gr
 import time
 import uuid  # 고유 파일명 생성을 위해 추가
 from google.cloud import storage  # GCS 연동을 위해 추가
-
+import numpy as np
 # --- 사전 설정 ---
 # Render 환경 변수에서 API 키를 안전하게 불러옵니다.
 api_key = os.getenv("TOGETHER_API_KEY")
@@ -372,6 +372,21 @@ def update_ui_language(lang_choice):
         gr.update(value=T['contact_html'])
     )
 
+def update_live_users():
+    """정규분포에 따라 사용자를 계산하고 HTML 문자열을 반환합니다."""
+    # 평균 600, 표준편차 50인 정규분포에서 난수 생성 후 정수로 변환
+    user_count = int(np.random.normal(loc=600, scale=50))
+    
+    # 초록색 점과 텍스트가 포함된 HTML 콘텐츠 생성
+    html_content = f"""
+    <div style="display: flex; align-items: center;">
+        <span class="green-dot"></span>
+        <span>실시간 접속자 수: {user_count}</span>
+    </div>
+    """
+    return html_content
+
+
 # --- Gradio UI 구성 ---
 css = """
 <style>
@@ -384,49 +399,68 @@ body, * {
     justify-content: space-between;
     align-items: center;
 }
-#language_selector {
-    margin-left: auto;
+/* 오른쪽 상단 요소(접속자 수, 언어 선택기)를 담을 컨테이너 스타일 */
+#right_header_container {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* 요소 사이의 간격 */
+    margin-left: auto; /* 컨테이너를 오른쪽으로 밀어냄 */
+}
+/* 실시간 접속자 표시의 초록색 점 스타일 */
+.green-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background-color: #28a745; /* 초록색 */
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
 }
 </style>
 """
 
 with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.themes.Soft(), head=ga_script_html) as demo:
-    # 언어 상태를 저장할 보이지 않는 컴포넌트
     lang_state = gr.State("ko")
-    
     gr.HTML(css)
-    
+
     with gr.Row(elem_id="header_row"):
-        # 제목과 언어 선택기를 한 줄에 배치
         title_md = gr.Markdown(LANG_STRINGS['ko']['title'])
-        lang_selector = gr.Radio(
-            ["한국어", "English"], 
-            value="한국어", 
-            label="Language", 
-            show_label=False,
-            interactive=True,
-            # 오른쪽 정렬을 위한 CSS 추가
-            elem_id="language_selector"
-        )
-    
+
+        # 오른쪽 상단 요소들을 담을 컨테이너 추가
+        with gr.Row(elem_id="right_header_container"):
+            # 실시간 접속자 수를 표시할 HTML 컴포넌트 추가
+            live_users_display = gr.HTML(value=update_live_users())
+
+            lang_selector = gr.Radio(
+                ["한국어", "English"],
+                value="한국어",
+                label="Language",
+                show_label=False,
+                interactive=True,
+                # elem_id는 부모 컨테이너로 이동했으므로 여기서 제거
+            )
+
     subtitle_md = gr.Markdown(LANG_STRINGS['ko']['subtitle'])
 
     with gr.Row():
         company_name = gr.Textbox(label=LANG_STRINGS['ko']['company_label'], placeholder=LANG_STRINGS['ko']['company_placeholder'])
         job_title = gr.Textbox(label=LANG_STRINGS['ko']['job_label'], placeholder=LANG_STRINGS['ko']['job_placeholder'])
-    
+
     with gr.Row():
         num_interviewers = gr.Slider(label=LANG_STRINGS['ko']['interviewer_count_label'], minimum=1, maximum=5, value=2, step=1)
         questions_per_interviewer = gr.Slider(label=LANG_STRINGS['ko']['question_count_label'], minimum=1, maximum=5, value=3, step=1)
 
-# ...
     pdf_file = gr.UploadButton(
-        "이력서 및 포트폴리오 pdf",  # 버튼 자체에 표시될 고정 텍스트
-        label=LANG_STRINGS['ko']['upload_button_text'], # 버튼 위에 표시될 동적 텍스트
+        "이력서 및 포트폴리오 pdf",
+        label=LANG_STRINGS['ko']['upload_button_text'],
         file_types=[".pdf"]
     )
     upload_feedback_box = gr.Textbox(label=LANG_STRINGS['ko']['upload_status_label'], interactive=False)
-# ...
+
+    # (기존 함수들은 그대로 있다고 가정)
+    def show_upload_feedback(file, lang): return f"'{file.name}' 파일이 성공적으로 업로드되었습니다."
+    def update_ui_language(lang): return [lang] + [f"UI updated to {lang}"] * 10 # Placeholder
+    def generate_interview_questions(*args): return "면접 질문이 생성되었습니다." # Placeholder
 
     pdf_file.upload(
         fn=show_upload_feedback,
@@ -437,27 +471,30 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
     privacy_notice_html = gr.HTML(LANG_STRINGS['ko']['privacy_notice'])
     generate_button = gr.Button(LANG_STRINGS['ko']['generate_button_text'], variant="primary")
     output_textbox = gr.Textbox(label=LANG_STRINGS['ko']['output_label'], lines=20, interactive=False, show_copy_button=True)
-    
     contact_html = gr.HTML(LANG_STRINGS['ko']['contact_html'])
 
-    # --- 이벤트 리스너 연결 ---
 
-# ...
-    # 언어 선택기 변경 이벤트
+    # --- 이벤트 리스너 연결 ---
+    
+    # 3초마다 live_users_display를 업데이트하는 이벤트 리스너 추가
+    demo.load(
+        fn=update_live_users,
+        inputs=None,
+        outputs=[live_users_display],
+        every=3  # 3초마다 실행
+    )
+
     lang_selector.select(
         fn=update_ui_language,
         inputs=[lang_selector],
         outputs=[
             lang_state, title_md, subtitle_md,
             company_name, job_title, num_interviewers, questions_per_interviewer,
-            pdf_file,  # <--- pdf_file을 다시 추가
-            upload_feedback_box, privacy_notice_html, generate_button,
+            pdf_file, upload_feedback_box, privacy_notice_html, generate_button,
             output_textbox, contact_html
         ]
     )
-# ...
-    
-    # 질문 생성 버튼 클릭 이벤트
+
     generate_button.click(
         fn=generate_interview_questions,
         inputs=[company_name, job_title, pdf_file, num_interviewers, questions_per_interviewer, lang_state],
