@@ -372,19 +372,19 @@ def update_ui_language(lang_choice):
         gr.update(value=T['contact_html'])
     )
 
-def update_live_users():
-    """정규분포에 따라 사용자를 계산하고 HTML 문자열을 반환합니다."""
-    # 평균 600, 표준편차 50인 정규분포에서 난수 생성 후 정수로 변환
-    user_count = int(np.random.normal(loc=600, scale=50))
-    
-    # 초록색 점과 텍스트가 포함된 HTML 콘텐츠 생성
-    html_content = f"""
-    <div style="display: flex; align-items: center;">
-        <span class="green-dot"></span>
-        <span>실시간 접속자 수: {user_count}</span>
-    </div>
-    """
-    return html_content
+# --- 실시간 접속자 수 업데이트 함수 (제너레이터로 수정) ---
+def update_live_users_stream():
+    """무한 루프를 돌며 3초마다 업데이트된 HTML 콘텐츠를 yield합니다."""
+    while True:
+        user_count = int(np.random.normal(loc=600, scale=50))
+        html_content = f"""
+        <div style="display: flex; align-items: center;">
+            <span class="green-dot"></span>
+            <span>실시간 접속자 수: {user_count}</span>
+        </div>
+        """
+        yield html_content
+        time.sleep(3) # 3초 대기
 
 
 # --- Gradio UI 구성 ---
@@ -476,12 +476,10 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
 
     # --- 이벤트 리스너 연결 ---
     
-    # 3초마다 live_users_display를 업데이트하는 이벤트 리스너 추가
     demo.load(
-        fn=update_live_users,
+        fn=update_live_users_stream,
         inputs=None,
-        outputs=[live_users_display],
-        every=3  # 3초마다 실행
+        outputs=[live_users_display]
     )
 
     lang_selector.select(
