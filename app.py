@@ -46,7 +46,7 @@ MODELS = {
 LANG_STRINGS = {
     'ko': {
         "title": "# **FastHire | 맞춤형 면접 솔루션**",
-        "subtitle": "회사, 직무, 지원자의 PDF를 바탕으로 맞춤형 면접 질문을 생성합니다.<br>면접관 수에 따라 여러 종류의 면접관이 여러분에게 질문합니다.",
+        "subtitle": "합성 면접관에게 실제 면접 질문을 받아보세요! .<br>면접관 수에 따라 여러 종류의 면접관이 여러분에게 질문합니다.",
         "company_label": "1. 회사명",
         "company_placeholder": "예: 네이버웹툰",
         "job_label": "2. 채용 직무명",
@@ -410,10 +410,21 @@ def update_live_users(lang_choice):
 # --- Gradio UI 구성 ---
 css = """
 <style>
+<style>
+/* Google Fonts Import */
 @import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic&display=swap');
-body, * {
-    font-family: 'Nanum Gothic', 'Arial', sans-serif !important;
+@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+
+/* 한국어 폰트 설정 */
+.lang-ko, .lang-ko * {
+    font-family: 'Nanum Gothic', sans-serif !important;
 }
+
+/* 영어 폰트 설정 (기본값으로도 사용 가능) */
+.lang-en, .lang-en * {
+    font-family: 'Roboto', sans-serif !important;
+}
+
 #header_row {
     display: flex;
     justify-content: space-between;
@@ -437,7 +448,20 @@ body, * {
 </style>
 """
 
-with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.themes.Soft(), css=css) as demo:
+# [수정 2] JavaScript: 선택된 언어에 따라 body에 클래스를 적용하는 함수
+# Gradio 앱의 최상위 요소인 'gradio-app'에 클래스를 적용합니다.
+switch_font_js = """
+(selected_lang) => {
+    const lang_code = selected_lang === '한국어' ? 'ko' : 'en';
+    const root = document.querySelector('gradio-app');
+    if (root) {
+        root.classList.remove('lang-ko', 'lang-en');
+        root.classList.add('lang-' + lang_code);
+    }
+}
+"""
+
+with gr.Blocks(title="FastHire | 합성 면접관에게 실제 질문 받자", theme=gr.themes.Soft(), css=css, js=switch_font_js) as demo:
     lang_state = gr.State("ko")
     pdf_file_state = gr.State(None)
 
@@ -455,7 +479,7 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
                 interactive=True,
             )
 
-    timer = gr.Timer(3)
+    timer = gr.Timer(7)
     subtitle_md = gr.Markdown(LANG_STRINGS['ko']['subtitle'])
 
     with gr.Row():
@@ -479,24 +503,24 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
         inputs=[pdf_file, lang_state],
         outputs=[upload_feedback_box, pdf_file_state]
     )
-    
+    demo.load(None, inputs=lang_selector, js=switch_font_js)
+
     privacy_notice_html = gr.HTML(LANG_STRINGS['ko']['privacy_notice'])
     generate_button = gr.Button(LANG_STRINGS['ko']['generate_button_text'], variant="primary")
     output_textbox = gr.Textbox(label=LANG_STRINGS['ko']['output_label'], lines=20, interactive=False, show_copy_button=True)
     contact_html = gr.HTML(LANG_STRINGS['ko']['contact_html'])
 
-    # --- [수정된 이벤트 리스너] ---
+    # [수정 5] 언어 변경 시 UI 텍스트와 폰트를 모두 변경
     lang_selector.select(
         fn=update_ui_language,
         inputs=[lang_selector, pdf_file_state],
         outputs=[
             lang_state, title_md, subtitle_md,
             company_name, job_title, num_interviewers, questions_per_interviewer,
-            pdf_file, # 이제 'label'이 업데이트됩니다.
-            upload_feedback_box, privacy_notice_html, generate_button,
-            output_textbox, contact_html,
-            live_users
-        ]
+            pdf_file, upload_feedback_box, privacy_notice_html, generate_button,
+            output_textbox, contact_html, live_users
+        ],
+        js=switch_font_js # JavaScript 함수 호출 추가
     )
 
     timer.tick(
