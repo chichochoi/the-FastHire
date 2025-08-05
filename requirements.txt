@@ -1,6 +1,7 @@
 # requirements.txt
 
-gradio
+gradio>=4.0.0
+
 fastapi
 mangum
 uvicorn # 로컬 테스트 시 유용합니다.
