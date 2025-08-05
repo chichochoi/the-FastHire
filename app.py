@@ -383,8 +383,6 @@ def update_live_users(lang_choice):
     """선택된 언어에 맞춰 실시간 접속자 수를 표시하는 HTML을 반환하는 함수"""
     lang_key = 'en' if lang_choice == 'English' else 'ko'
     T = LANG_STRINGS[lang_key]
-
-    # 접속자 수를 랜덤하게 생성
     user_count = int(np.random.normal(loc=600, scale=50))
     live_user_text = T['live_users'].format(user_count=user_count)
     html_content = f"""
@@ -429,11 +427,12 @@ body, * {
 with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.themes.Soft(), css=css) as demo:
     lang_state = gr.State("ko")
 
+    # --- FIX START: UI 레이아웃 수정 및 'live_users' 컴포넌트 정의 ---
     with gr.Row(elem_id="header_row"):
         title_md = gr.Markdown(LANG_STRINGS['ko']['title'])
 
-        with gr.Column(elem_id="right_header_container", scale=0.3):
-            # 'live_users' HTML 컴포넌트를 정의합니다. 초기값은 "한국어" 기준입니다.
+        # --- FIX: scale 값을 정수로 변경 (0.3 -> 0) ---
+        with gr.Column(elem_id="right_header_container", scale=0):
             live_users = gr.HTML(update_live_users("한국어"))
 
             lang_selector = gr.Radio(
@@ -443,6 +442,9 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
                 show_label=False,
                 interactive=True,
             )
+
+    # --- FIX: 주기적 업데이트를 위한 Timer 컴포넌트 추가 ---
+    timer = gr.Timer(3, visible=False)
 
     subtitle_md = gr.Markdown(LANG_STRINGS['ko']['subtitle'])
 
@@ -458,9 +460,6 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
         LANG_STRINGS['ko']['upload_button_text'],
         file_types=[".pdf"]
     )
-    # UploadButton의 label은 고정되므로, Textbox 등으로 피드백을 주는 것이 좋습니다.
-    # 기존 코드에서 label을 업데이트하려고 했으나, UploadButton은 value를 업데이트해야 텍스트가 바뀝니다.
-    # 일관성을 위해 label은 유지하고, 피드백은 별도 컴포넌트를 사용합니다.
     upload_feedback_box = gr.Textbox(label=LANG_STRINGS['ko']['upload_status_label'], interactive=False)
 
     pdf_file.upload(
@@ -475,8 +474,6 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
     contact_html = gr.HTML(LANG_STRINGS['ko']['contact_html'])
 
     # --- 이벤트 리스너 연결 ---
-
-    # 1. 언어 선택기가 변경되면 UI의 모든 텍스트를 즉시 업데이트합니다.
     lang_selector.select(
         fn=update_ui_language,
         inputs=[lang_selector],
@@ -485,21 +482,17 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
             company_name, job_title, num_interviewers, questions_per_interviewer,
             pdf_file, upload_feedback_box, privacy_notice_html, generate_button,
             output_textbox, contact_html,
-            live_users  # 언어 변경 시 live_users도 즉시 업데이트
+            live_users
         ]
     )
 
-    # 2. 앱이 로드될 때, 그리고 그 후 3초마다 'update_live_users' 함수를 실행합니다.
-    #    - inputs: 현재 lang_selector의 값을 함수에 전달합니다.
-    #    - outputs: 함수의 반환값(HTML)으로 live_users 컴포넌트를 업데이트합니다.
-    demo.load(
+    # --- FIX: demo.load() 대신 timer.tick() 사용 ---
+    timer.tick(
         fn=update_live_users,
         inputs=[lang_selector],
-        outputs=[live_users],
-        every=3  # 3초마다 반복 실행
+        outputs=[live_users]
     )
 
-    # 3. 생성 버튼 클릭 이벤트
     generate_button.click(
         fn=generate_interview_questions,
         inputs=[company_name, job_title, pdf_file, num_interviewers, questions_per_interviewer, lang_state],
@@ -507,5 +500,4 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
     )
 
 if __name__ == "__main__":
-    # ga_script_html 같은 변수는 없어서 제거했습니다. 필요 시 추가해주세요.
     demo.launch(server_name="0.0.0.0", server_port=int(os.environ.get('PORT', 7860)))
