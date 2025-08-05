@@ -357,8 +357,9 @@ def update_ui_language(lang_choice):
     T = LANG_STRINGS[lang_key]
 
     # 실시간 접속자 수 HTML을 즉시 업데이트하기 위해 추가
+    # lang_choice는 "한국어" 또는 "English"이므로 그대로 전달
     updated_live_users_html = update_live_users(lang_choice)
-    
+
     return (
         lang_key,
         gr.update(value=T['title']),
@@ -367,7 +368,7 @@ def update_ui_language(lang_choice):
         gr.update(label=T['job_label'], placeholder=T['job_placeholder']),
         gr.update(label=T['interviewer_count_label']),
         gr.update(label=T['question_count_label']),
-        gr.update(label=T['upload_button_text']),
+        gr.update(value=T['upload_button_text']), # UploadButton은 value로 텍스트를 변경
         gr.update(label=T['upload_status_label']),
         gr.update(value=T['privacy_notice']),
         gr.update(value=T['generate_button_text']),
@@ -377,12 +378,13 @@ def update_ui_language(lang_choice):
         gr.update(value=updated_live_users_html)
     )
 
-# --- 실시간 접속자 수 업데이트 함수 (제너레이터로 수정) ---
+# --- 실시간 접속자 수 업데이트 함수 ---
 def update_live_users(lang_choice):
     """선택된 언어에 맞춰 실시간 접속자 수를 표시하는 HTML을 반환하는 함수"""
     lang_key = 'en' if lang_choice == 'English' else 'ko'
     T = LANG_STRINGS[lang_key]
 
+    # 접속자 수를 랜덤하게 생성
     user_count = int(np.random.normal(loc=600, scale=50))
     live_user_text = T['live_users'].format(user_count=user_count)
     html_content = f"""
@@ -424,16 +426,14 @@ body, * {
 </style>
 """
 
-with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.themes.Soft(), head=ga_script_html) as demo:
+with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.themes.Soft(), css=css) as demo:
     lang_state = gr.State("ko")
-    gr.HTML(css)
 
-    # --- FIX START: UI 레이아웃 수정 및 'live_users' 컴포넌트 정의 ---
     with gr.Row(elem_id="header_row"):
         title_md = gr.Markdown(LANG_STRINGS['ko']['title'])
 
-        with gr.Column(elem_id="right_header_container", scale=0.3): # 오른쪽 정렬을 위해 Column 사용
-             # 1. 'live_users'라는 이름의 HTML 컴포넌트를 정의하여 NameError를 해결합니다.
+        with gr.Column(elem_id="right_header_container", scale=0.3):
+            # 'live_users' HTML 컴포넌트를 정의합니다. 초기값은 "한국어" 기준입니다.
             live_users = gr.HTML(update_live_users("한국어"))
 
             lang_selector = gr.Radio(
@@ -444,11 +444,6 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
                 interactive=True,
             )
 
-    # 2. JavaScript가 주기적으로 클릭할 숨겨진 버튼을 정의합니다.
-    with gr.Row(visible=False):
-        live_users_refresh_button = gr.Button("Refresh", elem_id="live_users_refresh_button")
-    # --- FIX END ---
-    
     subtitle_md = gr.Markdown(LANG_STRINGS['ko']['subtitle'])
 
     with gr.Row():
@@ -460,10 +455,12 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
         questions_per_interviewer = gr.Slider(label=LANG_STRINGS['ko']['question_count_label'], minimum=1, maximum=5, value=3, step=1)
 
     pdf_file = gr.UploadButton(
-        "이력서 및 포트폴리오 pdf",
-        label=LANG_STRINGS['ko']['upload_button_text'],
+        LANG_STRINGS['ko']['upload_button_text'],
         file_types=[".pdf"]
     )
+    # UploadButton의 label은 고정되므로, Textbox 등으로 피드백을 주는 것이 좋습니다.
+    # 기존 코드에서 label을 업데이트하려고 했으나, UploadButton은 value를 업데이트해야 텍스트가 바뀝니다.
+    # 일관성을 위해 label은 유지하고, 피드백은 별도 컴포넌트를 사용합니다.
     upload_feedback_box = gr.Textbox(label=LANG_STRINGS['ko']['upload_status_label'], interactive=False)
 
     pdf_file.upload(
@@ -478,6 +475,8 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
     contact_html = gr.HTML(LANG_STRINGS['ko']['contact_html'])
 
     # --- 이벤트 리스너 연결 ---
+
+    # 1. 언어 선택기가 변경되면 UI의 모든 텍스트를 즉시 업데이트합니다.
     lang_selector.select(
         fn=update_ui_language,
         inputs=[lang_selector],
@@ -486,38 +485,21 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
             company_name, job_title, num_interviewers, questions_per_interviewer,
             pdf_file, upload_feedback_box, privacy_notice_html, generate_button,
             output_textbox, contact_html,
-            live_users  # live_users 컴포넌트를 출력 대상에 추가
+            live_users  # 언어 변경 시 live_users도 즉시 업데이트
         ]
     )
 
-    # 이제 'live_users' 컴포넌트가 존재하므로 이 이벤트 리스너가 정상적으로 작동합니다.
-    live_users_refresh_button.click(
+    # 2. 앱이 로드될 때, 그리고 그 후 3초마다 'update_live_users' 함수를 실행합니다.
+    #    - inputs: 현재 lang_selector의 값을 함수에 전달합니다.
+    #    - outputs: 함수의 반환값(HTML)으로 live_users 컴포넌트를 업데이트합니다.
+    demo.load(
         fn=update_live_users,
         inputs=[lang_selector],
-        outputs=[live_users]
-    )
-    
-    demo.load(
-        None, None, None,
-        js="""
-        () => {
-            const refresh_button_id = 'live_users_refresh_button';
-            function trigger_refresh() {
-                const refresh_button = document.querySelector(`#${refresh_button_id} > button`);
-                if (refresh_button) {
-                    refresh_button.click();
-                } else {
-                    console.error('Live users refresh button not found in DOM.');
-                }
-            }
-            // 페이지 로드 후 첫 업데이트 실행
-            setTimeout(trigger_refresh, 500);
-            // 3초마다 주기적으로 업데이트
-            setInterval(trigger_refresh, 3000);
-        }
-        """
+        outputs=[live_users],
+        every=3  # 3초마다 반복 실행
     )
 
+    # 3. 생성 버튼 클릭 이벤트
     generate_button.click(
         fn=generate_interview_questions,
         inputs=[company_name, job_title, pdf_file, num_interviewers, questions_per_interviewer, lang_state],
@@ -525,4 +507,5 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
     )
 
 if __name__ == "__main__":
+    # ga_script_html 같은 변수는 없어서 제거했습니다. 필요 시 추가해주세요.
     demo.launch(server_name="0.0.0.0", server_port=int(os.environ.get('PORT', 7860)))
