@@ -46,7 +46,7 @@ MODELS = {
 LANG_STRINGS = {
     'ko': {
         "title": "# **FastHire | 맞춤형 면접 솔루션**",
-        "subtitle": "합성 면접관에게 실제 면접 질문을 받아보세요! .<br>면접관 수에 따라 여러 종류의 면접관이 여러분에게 질문합니다.",
+        "subtitle": "합성 면접관에게 진짜 면접 질문 받기!<br>면접관 수에 따라 여러 종류의 면접관이 여러분에게 질문합니다.",
         "company_label": "1. 회사명",
         "company_placeholder": "예: 네이버웹툰",
         "job_label": "2. 채용 직무명",
@@ -363,37 +363,31 @@ def generate_interview_questions(company_name, job_title, pdf_file_obj, num_inte
     output_log += T['log_all_done'] + final_result
     yield output_log
 
-# --- [수정 1] update_ui_language 함수를 올바르게 구현 ---
-# 이 함수가 언어 변경의 핵심입니다.
-def update_ui_language(selected_lang, pdf_file_state):
-    # 선택된 언어("한국어" 또는 "English")에 따라 lang_code를 'ko' 또는 'en'으로 설정
-    lang_code = "ko" if selected_lang == "한국어" else "en"
-    # 해당 언어의 문자열 딕셔너리를 가져옴
-    current_strings = LANG_STRINGS[lang_code]
+# --- [수정된 UI 언어 변경 함수] ---
+def update_ui_language(lang_choice, current_file):
+    lang_key = 'en' if lang_choice == 'English' else 'ko'
+    T = LANG_STRINGS[lang_key]
 
-    # 파일 업로드 상태 메시지도 언어에 맞게 변경
-    if pdf_file_state:
-        filename = os.path.basename(pdf_file_state.name)
-        upload_feedback = f"'{filename}' 파일이 성공적으로 업로드되었습니다." if lang_code == 'ko' else f"Successfully uploaded '{filename}'."
-    else:
-        upload_feedback = "파일이 업로드되지 않았습니다." if lang_code == 'ko' else "No file uploaded."
+    updated_live_users_html = update_live_users(lang_choice)
 
-    # 모든 UI 컴포넌트의 텍스트를 새로운 언어로 업데이트하여 반환
+    # 파일 업로드 후에는 파일 이름이 표시되므로, 피드백 텍스트를 초기화하지 않도록 처리
+    feedback_text = gr.update() if current_file else ""
+
     return (
-        lang_code,
-        current_strings['title'],
-        current_strings['subtitle'],
-        gr.update(label=current_strings['company_label'], placeholder=current_strings['company_placeholder']),
-        gr.update(label=current_strings['job_label'], placeholder=current_strings['job_placeholder']),
-        gr.update(label=current_strings['interviewer_count_label']),
-        gr.update(label=current_strings['question_count_label']),
-        gr.update(value=current_strings['upload_button_text'], label=current_strings['upload_button_label']),
-        gr.update(label=current_strings['upload_status_label'], value=upload_feedback),
-        current_strings['privacy_notice'],
-        current_strings['generate_button_text'],
-        gr.update(label=current_strings['output_label']),
-        current_strings['contact_html'],
-        update_live_users(selected_lang)
+        lang_key,
+        gr.update(value=T['title']),
+        gr.update(value=T['subtitle']),
+        gr.update(label=T['company_label'], placeholder=T['company_placeholder']),
+        gr.update(label=T['job_label'], placeholder=T['job_placeholder']),
+        gr.update(label=T['interviewer_count_label']),
+        gr.update(label=T['question_count_label']),
+        gr.update(label=T['upload_button_label']), # UploadButton의 'label'을 업데이트
+        gr.update(value=feedback_text, label=T['upload_status_label']),
+        gr.update(value=T['privacy_notice']),
+        gr.update(value=T['generate_button_text']),
+        gr.update(label=T['output_label']),
+        gr.update(value=T['contact_html']),
+        gr.update(value=updated_live_users_html)
     )
 
 
@@ -416,20 +410,10 @@ def update_live_users(lang_choice):
 # --- Gradio UI 구성 ---
 css = """
 <style>
-/* Google Fonts Import */
 @import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
-
-/* 한국어 폰트 설정 */
-.lang-ko, .lang-ko * {
-    font-family: 'Nanum Gothic', sans-serif !important;
+body, * {
+    font-family: 'Nanum Gothic', 'Arial', sans-serif !important;
 }
-
-/* 영어 폰트 설정 (기본값으로도 사용 가능) */
-.lang-en, .lang-en * {
-    font-family: 'Roboto', sans-serif !important;
-}
-
 #header_row {
     display: flex;
     justify-content: space-between;
@@ -453,20 +437,7 @@ css = """
 </style>
 """
 
-# [수정 2] JavaScript: 선택된 언어에 따라 body에 클래스를 적용하는 함수
-# Gradio 앱의 최상위 요소인 'gradio-app'에 클래스를 적용합니다.
-switch_font_js = """
-(selected_lang) => {
-    const lang_code = selected_lang === '한국어' ? 'ko' : 'en';
-    const root = document.querySelector('gradio-app');
-    if (root) {
-        root.classList.remove('lang-ko', 'lang-en');
-        root.classList.add('lang-' + lang_code);
-    }
-}
-"""
-
-with gr.Blocks(title="FastHire | 합성 면접관에게 실제 질문 받자", theme=gr.themes.Soft(), css=css, js=switch_font_js) as demo:
+with gr.Blocks(title="FastHire | 합성 면접관에게 진짜 면접 받기", theme=gr.themes.Soft(), css=css) as demo:
     lang_state = gr.State("ko")
     pdf_file_state = gr.State(None)
 
@@ -508,24 +479,24 @@ with gr.Blocks(title="FastHire | 합성 면접관에게 실제 질문 받자", t
         inputs=[pdf_file, lang_state],
         outputs=[upload_feedback_box, pdf_file_state]
     )
-    demo.load(None, inputs=lang_selector, js=switch_font_js)
-
+    
     privacy_notice_html = gr.HTML(LANG_STRINGS['ko']['privacy_notice'])
     generate_button = gr.Button(LANG_STRINGS['ko']['generate_button_text'], variant="primary")
     output_textbox = gr.Textbox(label=LANG_STRINGS['ko']['output_label'], lines=20, interactive=False, show_copy_button=True)
     contact_html = gr.HTML(LANG_STRINGS['ko']['contact_html'])
 
-    # [수정 5] 언어 변경 시 UI 텍스트와 폰트를 모두 변경
+    # --- [수정된 이벤트 리스너] ---
     lang_selector.select(
         fn=update_ui_language,
         inputs=[lang_selector, pdf_file_state],
         outputs=[
             lang_state, title_md, subtitle_md,
             company_name, job_title, num_interviewers, questions_per_interviewer,
-            pdf_file, upload_feedback_box, privacy_notice_html, generate_button,
-            output_textbox, contact_html, live_users
-        ],
-        js=switch_font_js # JavaScript 함수 호출 추가
+            pdf_file, # 이제 'label'이 업데이트됩니다.
+            upload_feedback_box, privacy_notice_html, generate_button,
+            output_textbox, contact_html,
+            live_users
+        ]
     )
 
     timer.tick(
