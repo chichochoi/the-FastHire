@@ -362,14 +362,17 @@ def generate_interview_questions(company_name, job_title, pdf_file_obj, num_inte
     yield output_log
 
 # --- [수정된 UI 언어 변경 함수] ---
-def update_ui_language(lang_choice):
+def update_ui_language(lang_choice, current_file):
     lang_key = 'en' if lang_choice == 'English' else 'ko'
     T = LANG_STRINGS[lang_key]
 
-    # 실시간 접속자 수 HTML을 즉시 업데이트하기 위해 추가
-    # lang_choice는 "한국어" 또는 "English"이므로 그대로 전달
     updated_live_users_html = update_live_users(lang_choice)
 
+    # --- FIX START: 파일 업로드 상태에 따라 버튼 업데이트를 조건부로 처리 ---
+    # 파일이 업로드된 후에는 버튼의 값을 변경하지 않도록 gr.update()를 반환합니다.
+    # 파일이 없을 때만 버튼의 텍스트를 변경합니다.
+    upload_button_update = gr.update() if current_file else gr.update(value=T['upload_button_text'])
+    # --- FIX END ---
     return (
         lang_key,
         gr.update(value=T['title']),
@@ -378,15 +381,15 @@ def update_ui_language(lang_choice):
         gr.update(label=T['job_label'], placeholder=T['job_placeholder']),
         gr.update(label=T['interviewer_count_label']),
         gr.update(label=T['question_count_label']),
-        gr.update(value=T['upload_button_text']), # UploadButton은 value로 텍스트를 변경
+        upload_button_update, # 수정된 업데이트 값을 사용합니다.
         gr.update(label=T['upload_status_label']),
         gr.update(value=T['privacy_notice']),
         gr.update(value=T['generate_button_text']),
         gr.update(label=T['output_label']),
         gr.update(value=T['contact_html']),
-        # live_users 컴포넌트에 전달할 업데이트 값을 추가
         gr.update(value=updated_live_users_html)
     )
+
 
 # --- 실시간 접속자 수 업데이트 함수 ---
 def update_live_users(lang_choice):
@@ -487,7 +490,7 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
     # --- 이벤트 리스너 연결 ---
     lang_selector.select(
         fn=update_ui_language,
-        inputs=[lang_selector],
+        inputs=[lang_selector, pdf_file_state], # <--- pdf_file_state를 입력으로 추가
         outputs=[
             lang_state, title_md, subtitle_md,
             company_name, job_title, num_interviewers, questions_per_interviewer,
