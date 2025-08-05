@@ -436,7 +436,6 @@ body, * {
 }
 </style>
 """
-
 head_html = """
     <!-- SEO Meta Tags -->
     <meta name="description" content="FastHire | PDF-based custom interview question generation platform. AI automatically creates questions when you enter a company and job title. Get sample questions from various interviewers.">
@@ -452,7 +451,13 @@ head_html = """
 """
 
 
-with gr.Blocks(title="FastHire | 합성 면접관에게 진짜 면접 받기", theme=gr.themes.Soft(), css=css, head=head_html) as demo:
+with gr.Blocks(
+    title="FastHire | 합성 면접관에게 진짜 면접 받기",
+    theme=gr.themes.Soft(),
+    css=css,
+    head=head_html,
+    favicon_path="logo2.jpg"  # <-- 이 부분을 추가하세요
+) as demo:
     lang_state = gr.State("ko")
     pdf_file_state = gr.State(None)
 
