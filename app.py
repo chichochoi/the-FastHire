@@ -504,11 +504,11 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
         outputs=[live_users]
     )
 
-generate_button.click(
-    fn=generate_interview_questions,
-    inputs=[company_name, job_title, pdf_file_state, num_interviewers, questions_per_interviewer, lang_state], # <--- pdf_file을 pdf_file_state로 변경
-    outputs=output_textbox
-)
+    generate_button.click(
+        fn=generate_interview_questions,
+        inputs=[company_name, job_title, pdf_file_state, num_interviewers, questions_per_interviewer, lang_state], # <--- pdf_file을 pdf_file_state로 변경
+        outputs=output_textbox
+    )
 
 if __name__ == "__main__":
     demo.launch(server_name="0.0.0.0", server_port=int(os.environ.get('PORT', 7860)))
