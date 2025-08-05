@@ -444,7 +444,7 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
             )
 
     # --- FIX: 주기적 업데이트를 위한 Timer 컴포넌트 추가 ---
-    timer = gr.Timer(3, visible=False)
+    timer = gr.Timer(3)
 
     subtitle_md = gr.Markdown(LANG_STRINGS['ko']['subtitle'])
 
