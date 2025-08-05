@@ -53,7 +53,8 @@ LANG_STRINGS = {
         "job_placeholder": "예: 백엔드 개발자",
         "interviewer_count_label": "3. 면접관 수",
         "question_count_label": "4. 면접관 별 질문 개수",
-        "upload_button_text": "5. 이력서 및 포트폴리오 PDF 업로드",
+        "upload_button_text": "📄 이력서/포트폴리오 업로드 (선택)",
+        "upload_button_label": "5. 이력서 및 포트폴리오 PDF 업로드",
         "upload_status_label": "업로드 상태",
         "upload_success": "✅ 파일 업로드 완료!",
         "privacy_notice": "<div style='text-align: center; color: gray; font-size: 0.8em; margin-top: 20px; margin-bottom: 10px;'>*고객의 개인정보는 서비스 제공 목적 달성 후 안전하게 삭제됩니다*</div>",
@@ -120,7 +121,8 @@ LANG_STRINGS = {
         "job_placeholder": "e.g., Software Engineer",
         "interviewer_count_label": "3. Number of Interviewers",
         "question_count_label": "4. Questions per Interviewer",
-        "upload_button_text": "5. Upload Resume/Portfolio PDF",
+        "upload_button_text": "📄 Upload Resume/Portfolio (Optional)",
+        "upload_button_label": "5. Upload Resume/Portfolio PDF",
         "upload_status_label": "Upload Status",
         "upload_success": "✅ File uploaded successfully!",
         "privacy_notice": "<div style='text-align: center; color: gray; font-size: 0.8em; margin-top: 20px; margin-bottom: 10px;'>*Your personal information will be securely deleted after the service purpose is fulfilled.*</div>",
@@ -368,11 +370,9 @@ def update_ui_language(lang_choice, current_file):
 
     updated_live_users_html = update_live_users(lang_choice)
 
-    # --- FIX START: 파일 업로드 상태에 따라 버튼 업데이트를 조건부로 처리 ---
-    # 파일이 업로드된 후에는 버튼의 값을 변경하지 않도록 gr.update()를 반환합니다.
-    # 파일이 없을 때만 버튼의 텍스트를 변경합니다.
-    upload_button_update = gr.update() if current_file else gr.update(value=T['upload_button_text'])
-    # --- FIX END ---
+    # 파일 업로드 후에는 파일 이름이 표시되므로, 피드백 텍스트를 초기화하지 않도록 처리
+    feedback_text = gr.update() if current_file else ""
+
     return (
         lang_key,
         gr.update(value=T['title']),
@@ -381,8 +381,8 @@ def update_ui_language(lang_choice, current_file):
         gr.update(label=T['job_label'], placeholder=T['job_placeholder']),
         gr.update(label=T['interviewer_count_label']),
         gr.update(label=T['question_count_label']),
-        upload_button_update, # 수정된 업데이트 값을 사용합니다.
-        gr.update(label=T['upload_status_label']),
+        gr.update(label=T['upload_button_label']), # UploadButton의 'label'을 업데이트
+        gr.update(value=feedback_text, label=T['upload_status_label']),
         gr.update(value=T['privacy_notice']),
         gr.update(value=T['generate_button_text']),
         gr.update(label=T['output_label']),
@@ -422,14 +422,14 @@ body, * {
 #right_header_container {
     display: flex;
     align-items: center;
-    gap: 20px; /* 요소 사이의 간격 */
-    margin-left: auto; /* 컨테이너를 오른쪽으로 밀어냄 */
+    gap: 20px;
+    margin-left: auto;
 }
 .green-dot {
     display: inline-block;
     width: 10px;
     height: 10px;
-    background-color: #28a745; /* 초록색 */
+    background-color: #28a745;
     border-radius: 50%;
     margin-right: 8px;
     vertical-align: middle;
@@ -439,13 +439,11 @@ body, * {
 
 with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.themes.Soft(), css=css) as demo:
     lang_state = gr.State("ko")
-    pdf_file_state = gr.State(None)  # <--- 이 줄을 추가합니다.
-    
-    # --- FIX START: UI 레이아웃 수정 및 'live_users' 컴포넌트 정의 ---
+    pdf_file_state = gr.State(None)
+
     with gr.Row(elem_id="header_row"):
         title_md = gr.Markdown(LANG_STRINGS['ko']['title'])
 
-        # --- FIX: scale 값을 정수로 변경 (0.3 -> 0) ---
         with gr.Column(elem_id="right_header_container", scale=0):
             live_users = gr.HTML(update_live_users("한국어"))
 
@@ -457,9 +455,7 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
                 interactive=True,
             )
 
-    # --- FIX: 주기적 업데이트를 위한 Timer 컴포넌트 추가 ---
     timer = gr.Timer(3)
-
     subtitle_md = gr.Markdown(LANG_STRINGS['ko']['subtitle'])
 
     with gr.Row():
@@ -470,16 +466,18 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
         num_interviewers = gr.Slider(label=LANG_STRINGS['ko']['interviewer_count_label'], minimum=1, maximum=5, value=2, step=1)
         questions_per_interviewer = gr.Slider(label=LANG_STRINGS['ko']['question_count_label'], minimum=1, maximum=5, value=3, step=1)
 
+    # --- [수정된 UI] UploadButton에 label 추가 ---
     pdf_file = gr.UploadButton(
         LANG_STRINGS['ko']['upload_button_text'],
+        label=LANG_STRINGS['ko']['upload_button_label'], # 라벨 추가
         file_types=[".pdf"]
     )
     upload_feedback_box = gr.Textbox(label=LANG_STRINGS['ko']['upload_status_label'], interactive=False)
 
     pdf_file.upload(
-        fn=handle_upload,  # <--- 함수 변경
+        fn=handle_upload,
         inputs=[pdf_file, lang_state],
-        outputs=[upload_feedback_box, pdf_file_state] # <--- pdf_file_state 추가
+        outputs=[upload_feedback_box, pdf_file_state]
     )
     
     privacy_notice_html = gr.HTML(LANG_STRINGS['ko']['privacy_notice'])
@@ -487,20 +485,20 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
     output_textbox = gr.Textbox(label=LANG_STRINGS['ko']['output_label'], lines=20, interactive=False, show_copy_button=True)
     contact_html = gr.HTML(LANG_STRINGS['ko']['contact_html'])
 
-    # --- 이벤트 리스너 연결 ---
+    # --- [수정된 이벤트 리스너] ---
     lang_selector.select(
         fn=update_ui_language,
-        inputs=[lang_selector, pdf_file_state], # <--- pdf_file_state를 입력으로 추가
+        inputs=[lang_selector, pdf_file_state],
         outputs=[
             lang_state, title_md, subtitle_md,
             company_name, job_title, num_interviewers, questions_per_interviewer,
-            pdf_file, upload_feedback_box, privacy_notice_html, generate_button,
+            pdf_file, # 이제 'label'이 업데이트됩니다.
+            upload_feedback_box, privacy_notice_html, generate_button,
             output_textbox, contact_html,
             live_users
         ]
     )
 
-    # --- FIX: demo.load() 대신 timer.tick() 사용 ---
     timer.tick(
         fn=update_live_users,
         inputs=[lang_selector],
@@ -509,7 +507,7 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
 
     generate_button.click(
         fn=generate_interview_questions,
-        inputs=[company_name, job_title, pdf_file_state, num_interviewers, questions_per_interviewer, lang_state], # <--- pdf_file을 pdf_file_state로 변경
+        inputs=[company_name, job_title, pdf_file_state, num_interviewers, questions_per_interviewer, lang_state],
         outputs=output_textbox
     )
 
