@@ -437,7 +437,22 @@ body, * {
 </style>
 """
 
-with gr.Blocks(title="FastHire | 합성 면접관에게 진짜 면접 받기", theme=gr.themes.Soft(), css=css) as demo:
+head_html = """
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="FastHire | PDF-based custom interview question generation platform. AI automatically creates questions when you enter a company and job title. Get sample questions from various interviewers.">
+    <meta name="keywords" content="interview question examples, AI interview questions, interview prep, job search, FastHire">
+    <meta name="author" content="FastHire">
+
+    <!-- Open Graph (OG) Tags for Link Previews -->
+    <meta property="og:title" content="FastHire | We provide custom interview questions">
+    <meta property="og:description" content="Create your own personalized interview questions with just a company, job title, and resume! Get real interview questions from a variety of interviewers.">
+    <meta property="og:image" content="https://i.imgur.com/hpUa5yb.jpeg"> 
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="FastHire">
+"""
+
+
+with gr.Blocks(title="FastHire | 합성 면접관에게 진짜 면접 받기", theme=gr.themes.Soft(), css=css, head=head_html) as demo:
     lang_state = gr.State("ko")
     pdf_file_state = gr.State(None)
 
@@ -512,4 +527,8 @@ with gr.Blocks(title="FastHire | 합성 면접관에게 진짜 면접 받기", t
     )
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=int(os.environ.get('PORT', 7860)))
+    demo.launch(
+        server_name="0.0.0.0",
+        server_port=int(os.environ.get('PORT', 7860)),
+        favicon_path="hpUa5yb.jpeg"
+    )
