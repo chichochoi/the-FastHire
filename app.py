@@ -266,25 +266,35 @@ def call_llm(prompt: str, chat_history: list, model: str) -> str:
         print(f"LLM API 호출 중 오류 발생: {e}")
         return f"Error: LLM API call failed. ({e})"
 
+        
+# 이 함수를 새로 추가하세요.
+def handle_upload(pdf_file, lang_key):
+    """파일 업로드 시 피드백 메시지와 파일 객체를 반환합니다."""
+    T = LANG_STRINGS[lang_key]
+    if pdf_file:
+        # 튜플 형태로 두 개의 값을 반환합니다.
+        return T['upload_success'], pdf_file
+    return "", None
+
 # --- [수정된 메인 함수] ---
-def generate_interview_questions(company_name, job_title, pdf_file, num_interviewers, questions_per_interviewer, lang):
+def generate_interview_questions(company_name, job_title, pdf_file_obj, num_interviewers, questions_per_interviewer, lang):
     """Gradio 인터페이스로부터 입력을 받아 면접 질문을 생성하고 요약하는 메인 함수 (다국어 지원)"""
     
     # 현재 언어에 맞는 텍스트 로드
     T = LANG_STRINGS[lang]
     model = MODELS[lang]
 
-    if not all([company_name, job_title, pdf_file]):
+    if not all([company_name, job_title, pdf_file_obj]):
         yield T['error_all_fields']
         return
         
-    pdf_path = pdf_file.name
+    pdf_path = pdf_file_obj.name
     if not pdf_path.lower().endswith(".pdf"):
         yield T['error_not_pdf']
         return
 
     if GCS_BUCKET_NAME:
-        original_filename = os.path.basename(pdf_file.name)
+        original_filename = os.path.basename(pdf_file_obj.name)
         unique_id = str(uuid.uuid4().hex)[:8]
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         destination_blob_name = f"{timestamp}-{unique_id}-{original_filename}"
@@ -426,7 +436,8 @@ body, * {
 
 with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.themes.Soft(), css=css) as demo:
     lang_state = gr.State("ko")
-
+    pdf_file_state = gr.State(None)  # <--- 이 줄을 추가합니다.
+    
     # --- FIX START: UI 레이아웃 수정 및 'live_users' 컴포넌트 정의 ---
     with gr.Row(elem_id="header_row"):
         title_md = gr.Markdown(LANG_STRINGS['ko']['title'])
@@ -463,11 +474,11 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
     upload_feedback_box = gr.Textbox(label=LANG_STRINGS['ko']['upload_status_label'], interactive=False)
 
     pdf_file.upload(
-        fn=show_upload_feedback,
+        fn=handle_upload,  # <--- 함수 변경
         inputs=[pdf_file, lang_state],
-        outputs=[upload_feedback_box]
+        outputs=[upload_feedback_box, pdf_file_state] # <--- pdf_file_state 추가
     )
-
+    
     privacy_notice_html = gr.HTML(LANG_STRINGS['ko']['privacy_notice'])
     generate_button = gr.Button(LANG_STRINGS['ko']['generate_button_text'], variant="primary")
     output_textbox = gr.Textbox(label=LANG_STRINGS['ko']['output_label'], lines=20, interactive=False, show_copy_button=True)
@@ -493,11 +504,11 @@ with gr.Blocks(title="FastHire | 맞춤형 면접 질문 받기", theme=gr.theme
         outputs=[live_users]
     )
 
-    generate_button.click(
-        fn=generate_interview_questions,
-        inputs=[company_name, job_title, pdf_file, num_interviewers, questions_per_interviewer, lang_state],
-        outputs=output_textbox
-    )
+generate_button.click(
+    fn=generate_interview_questions,
+    inputs=[company_name, job_title, pdf_file_state, num_interviewers, questions_per_interviewer, lang_state], # <--- pdf_file을 pdf_file_state로 변경
+    outputs=output_textbox
+)
 
 if __name__ == "__main__":
     demo.launch(server_name="0.0.0.0", server_port=int(os.environ.get('PORT', 7860)))
