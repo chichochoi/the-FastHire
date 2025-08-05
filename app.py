@@ -529,6 +529,4 @@ with gr.Blocks(title="FastHire | 합성 면접관에게 진짜 면접 받기", t
 if __name__ == "__main__":
     demo.launch(
         server_name="0.0.0.0",
-        server_port=int(os.environ.get('PORT', 7860)),
-        favicon_path="hpUa5yb.jpeg"
-    )
+        server_port=int(os.environ.get('PORT', 7860)))
