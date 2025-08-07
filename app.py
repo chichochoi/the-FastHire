@@ -396,7 +396,7 @@ def update_live_users(lang_choice):
     """선택된 언어에 맞춰 실시간 접속자 수를 표시하는 HTML을 반환하는 함수"""
     lang_key = 'en' if lang_choice == 'English' else 'ko'
     T = LANG_STRINGS[lang_key]
-    user_count = int(np.random.normal(loc=600, scale=50))
+    user_count = int(np.random.normal(loc=170, scale=30))
     live_user_text = T['live_users'].format(user_count=user_count)
     html_content = f"""
     <div style="display: flex; align-items: center; justify-content: flex-end;">
