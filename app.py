@@ -84,12 +84,22 @@ LANG_STRINGS = {
 - 회사 소개: (회사의 비전, 문화, 주력 사업 등을 간략히 서술)
 - 채용 직무: {job_title}
 - 핵심 요구 역량: (해당 직무에 필요한 기술 스택, 소프트 스킬 등을 3-4가지 서술)""",
-        "prompt_personas": """{company_name}의 {job_title} 직무 면접관 {num_interviewers}명의 페르소나를 생성해 주세요. 각 페르소나는 직책, 경력, 성격, 주요 질문 스타일이 드러나도록 구체적으로 묘사해야 합니다.
+        "prompt_personas": """{company_name}의 {job_title} 직무 면접관 {num_interviewers}명의 페르소나를 아래 형식으로 생성해 주세요. 각 페르소나는 직책, 경력, 성격, 주요 질문 스타일이 드러나도록 구체적으로 묘사해야 합니다.
 
-[페르소나 생성 예시]
-1. 박준형 이사 (40대 후반): 20년차 개발자 출신으로 현재 기술 총괄. 기술의 깊이와 문제 해결 과정을 집요하게 파고드는 스타일.
-2. 최유진 팀장 (30대 중반): 실무 팀의 리더. 협업 능력과 커뮤니케이션, 컬처핏을 중요하게 생각하며, 경험 기반의 질문을 주로 던짐.""",
+(면접관 페르소나 형식)
+*   **이름/성별:** {이름/성별} (예: 김민준/남성, 박서연/여성)
+*   **연령대:** {연령대} (예: 30대 초반, 40대 후반, 50대)
+*   **소속 및 직책:** {소속 부서 및 직책} (예: 기술 개발팀 팀장, 인사팀 매니저)
+*   **경력:** {관련 분야 경력} (예: 15년차 개발자, 5년차 HR 담당자)
+*   **성격 및 태도:** {성격 및 태도} (예: 꼼꼼하고 분석적이며, 데이터 기반의 답변을 선호함. 온화하고 친근하며, 지원자의 경험에 깊이 공감하려 노력함)
+*   **면접 스타일:** {면접 스타일} (예: 직무 역량 중심의 압박 질문, 경험 기반의 행동사례면접(BEI), 편안한 대화 형식의 커피챗 스타일)""",
+
+
+        
         "prompt_final": """당신은 지금부터 면접 질문 생성 AI입니다. 아래 주어진 [면접 정보]를 완벽하게 숙지하고, 최고의 면접 질문을 만들어야 합니다.
+
+
+
 
 [면접 정보]
 1. 면접 상황
@@ -155,8 +165,21 @@ LANG_STRINGS = {
         "prompt_personas": """Please create {num_interviewers} interviewer personas for the {job_title} position at {company_name}. Each persona should be described in detail, including their job title, career background, personality, and primary questioning style.
 
 [Persona Creation Example]
-1. Director Park (Late 40s): A 20-year veteran developer, now the Head of Technology. Known for digging deep into technical depth and problem-solving processes.
-2. Team Lead Choi (Mid 30s): Leader of the practical team. Emphasizes collaboration, communication, and culture fit, primarily asking experience-based questions.""",
+(Interviewer Persona Format)
+
+Name/Gender: {Name/Gender} (e.g., Michael Kim/Male, Sarah Park/Female)
+
+Age Range: {Age Range} (e.g., Early 30s, Late 40s, 50s)
+
+Department/Title: {Department & Position} (e.g., Engineering Team Lead, HR Manager)
+
+Professional Experience: {Relevant Professional Experience} (e.g., 15-year veteran developer, 5-year HR specialist)
+
+Personality & Approach: {Personality & Attitude} (e.g., Detail-oriented and analytical, prefers data-driven responses. Warm and approachable, strives to deeply empathize with candidates’ experiences.)
+
+Interview Style: {Interview Style} (e.g., Competency-based rigorous questions, Behavioral Event Interview (BEI), Relaxed conversational “coffee chat” style)""",
+        
+
         "prompt_final": """You are now an interview question generation AI. You must perfectly understand the [Interview Information] provided below and create the best interview questions.
 
 [Interview Information]
