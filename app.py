@@ -38,8 +38,8 @@ except Exception as e:
 
 # --- [신규] LLM 모델 정의 ---
 MODELS = {
-    'ko': 'deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free',
-    'en': 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free' # 영어권에서 성능이 좋은 Llama 모델
+    'ko': 'lgai/exaone-deep-32b',
+    'en': 'lgai/exaone-deep-32b' # 영어권에서 성능이 좋은 Llama 모델
 }
 
 # --- [신규] 다국어 지원을 위한 텍스트 관리 ---
