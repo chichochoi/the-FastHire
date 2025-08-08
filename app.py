@@ -38,7 +38,7 @@ except Exception as e:
 
 # --- [신규] LLM 모델 정의 ---
 MODELS = {
-    'ko': 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free',
+    'ko': 'deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free',
     'en': 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free' # 영어권에서 성능이 좋은 Llama 모델
 }
 
