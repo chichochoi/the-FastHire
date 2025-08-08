@@ -116,11 +116,18 @@ LANG_STRINGS = {
 - (지원자 정보)의 활동과 관련된 질문을 반드시 1개 이상 포함해야 합니다.
 - 질문 뒤에는 "(의도: ...)" 형식으로 질문의 핵심 의도를 간략히 덧붙여 주세요.
 - 최종 결과물은 면접관별로 구분하여 깔끔하게 정리된 형태로만 출력해 주세요.""",
-        "prompt_real_final": """아래에서 영어를 모두 한국어로 번역해주세요.
-아래에서 중복되는 내용을 지우고 '면접관 페르소나'와 '면접질문'들만 남기세요.
----
+        "prompt_real_final": """
+        
+다음 내용을 검토하여,
+1) 영어 문장은 모두 자연스러운 한국어로 번역하고,
+2) 중복 내용이나 불필요한 설명은 제거하고,
+3) '면접관 페르소나'와 '면접 질문'만 남기세요.
+다른 설명, 사고 과정, 메모 등은 절대 출력하지 마세요.
+
+
+내용:
 {full_content_to_summarize}
----""",
+""",
     },
     'en': {
         "title": "# **FastHire | Custom Interview Solution**",
@@ -376,8 +383,13 @@ def generate_interview_questions(company_name, job_title, pdf_file_obj, num_inte
     output_log += T['log_summary_start'] + "\n"
     yield output_log
 
-    full_content_to_summarize = f"[Interviewer Personas]\n{interviewer_personas}\n\n[Generated Interview Questions]\n{final_questions_raw}"
-    prompt_real_final = T['prompt_real_final'].format(full_content_to_summarize=full_content_to_summarize)
+    full_content_to_summarize = (
+        f"[면접관 페르소나]\n{interviewer_personas}\n\n"
+        f"[면접 질문]\n{final_questions_raw}"
+    )
+    prompt_real_final = T['prompt_real_final'].format(
+        full_content_to_summarize=full_content_to_summarize
+    )
     summarized_result = call_llm(prompt_real_final, chat_history, model)
     if summarized_result.startswith("오류") or summarized_result.startswith("Error"):
         summarized_result = T['log_summary_fail']
