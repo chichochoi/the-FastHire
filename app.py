@@ -6,7 +6,6 @@ import time
 import uuid  # 고유 파일명 생성을 위해 추가
 from google.cloud import storage  # GCS 연동을 위해 추가
 import numpy as np
-import re
 
 # --- 사전 설정 ---
 # Render 환경 변수에서 API 키를 안전하게 불러옵니다.
@@ -78,14 +77,14 @@ LANG_STRINGS = {
         "log_all_done": "✅ 모든 작업이 완료되었습니다!\n\n---\n\n",
         "live_users": "실시간 접속자 수: {user_count}",
         "final_result_header": "### 🌟 면접관 프로필 + 면접 질문 + 질문 의도",
-        "prompt_context": """{company_name}의 {job_title} 채용에 대한 [면접 상황]을 아래 양식에 맞게 사실에 기반하여 구체적으로 작성해 주세요.
+        "prompt_context": """{company_name}의 {job_title} 채용에 대한 [면접 상황]을 아래 양식에 맞게 사실에 기반하여 한글로 작성해 주세요.
 
 [면접 상황]
 - 회사명: {company_name}
 - 회사 소개: (회사의 비전, 문화, 주력 사업 등을 간략히 서술)
 - 채용 직무: {job_title}
 - 핵심 요구 역량: (해당 직무에 필요한 기술 스택, 소프트 스킬 등을 3-4가지 서술)""",
-        "prompt_personas": """{company_name}의 {job_title} 직무 면접관 {num_interviewers}명의 페르소나를 아래 형식으로 생성해 주세요. 각 페르소나는 직책, 경력, 성격, 주요 질문 스타일이 드러나도록 구체적으로 묘사해야 합니다.
+        "prompt_personas": """{company_name}의 {job_title} 직무 면접관 {num_interviewers}명의 페르소나를 아래 형식으로, 반드시 한글을 사용해서 생성해 주세요. 각 페르소나는 직책, 경력, 성격, 주요 질문 스타일이 드러나도록 구체적으로 묘사해야 합니다.
 
 (면접관 페르소나 형식)
 *   **이름/성별:** (이름/성별) (예: 김민준/남성, 박서연/여성)
@@ -97,7 +96,7 @@ LANG_STRINGS = {
 
 
         
-        "prompt_final": """당신은 지금부터 면접 질문 생성 AI입니다. 아래 주어진 [면접 정보]를 완벽하게 숙지하고, 최고의 면접 질문을 만들어야 합니다.
+        "prompt_final": """당신은 지금부터 면접 질문 생성 AI입니다. 아래 주어진 [면접 정보]를 완벽하게 숙지하고, 최고의 면접 질문을 한글로 만들어야 합니다.
 
 
 
@@ -113,7 +112,7 @@ LANG_STRINGS = {
 {resume_text}
 
 [수행 과제]
-위 [면접 정보]에 기반하여, 각 면접관의 역할과 스타일에 맞는 맞춤형 면접 질문을 면접관별로 {questions_per_interviewer}개씩 생성해 주세요.
+위 [면접 정보]에 기반하여, 각 면접관의 역할과 스타일에 맞는 맞춤형 면접 질문을 면접관별로 {questions_per_interviewer}개씩 반드시 한글로 생성해 주세요.
 - (지원자 정보)의 활동과 관련된 질문을 반드시 1개 이상 포함해야 합니다.
 - 질문 뒤에는 "(의도: ...)" 형식으로 질문의 핵심 의도를 간략히 덧붙여 주세요.
 - 최종 결과물은 면접관별로 구분하여 깔끔하게 정리된 형태로만 출력해 주세요.""",
@@ -279,31 +278,14 @@ def extract_text_from_pdf(pdf_path: str) -> str:
         return f"오류: PDF 파일을 찾을 수 없습니다. 경로: {pdf_path}"
     except Exception as e:
         return f"PDF 처리 중 오류 발생: {e}"
-        
-def strip_reasoning(text: str) -> str:
-    """영어 reasoning(중간 사고 과정) 패턴을 제거"""
-    if not text:
-        return text
-    # <thought>...</thought> 블록 제거
-    text = re.sub(r"(?s)<thought>.*?</thought>", "", text)
-    # 'Okay, I need to', 'Let me', 'First,' 등으로 시작하는 줄 제거
-    text = re.sub(r"(?m)^(Okay,|Let me|I need to|First,|Now).*", "", text)
-    # 불필요한 공백 정리
-    return text.strip()
 
-def call_llm(prompt: str, chat_history: list, model: str, system_instruction: str = None) -> str:
-    """Together.ai API 호출 + reasoning 차단용 system prompt 지원"""
-    # --- [추가] system prompt 삽입 ---
-    messages = []
-    if system_instruction:
-        messages.append({"role": "system", "content": system_instruction})
-    messages.extend(chat_history)
-    messages.append({"role": "user", "content": prompt})
-
+def call_llm(prompt: str, chat_history: list, model: str) -> str:
+    """Together.ai API를 호출하고, 실패 시 오류 메시지를 반환하며 대화 히스토리를 유지합니다."""
+    chat_history.append({"role": "user", "content": prompt})
     try:
         response = client.chat.completions.create(
             model=model,
-            messages=messages,
+            messages=chat_history,
         )
         if response.choices and response.choices[0].message.content:
             reply = response.choices[0].message.content.strip()
@@ -326,11 +308,11 @@ def handle_upload(pdf_file, lang_key):
         return T['upload_success'], pdf_file
     return "", None
 
-
 # --- [수정된 메인 함수] ---
 def generate_interview_questions(company_name, job_title, pdf_file_obj, num_interviewers, questions_per_interviewer, lang):
     """Gradio 인터페이스로부터 입력을 받아 면접 질문을 생성하고 요약하는 메인 함수 (다국어 지원)"""
     
+    # 현재 언어에 맞는 텍스트 로드
     T = LANG_STRINGS[lang]
     model = MODELS[lang]
 
@@ -356,21 +338,12 @@ def generate_interview_questions(company_name, job_title, pdf_file_obj, num_inte
         yield f"PDF Processing Failed: {resume_text}"
         return
 
-    # --- system instruction (reasoning 차단 지시) ---
-    sys_instr_strict = (
-        "당신은 면접 자료 작성 전문가입니다.\n"
-        "- 절대 중간 사고 과정, 메모, 해설, 추론 과정을 출력하지 마세요.\n"
-        "- 주어진 내용에 따라 '면접관 페르소나'와 '면접 질문'만 작성하세요.\n"
-        "- 영어 문장은 모두 한국어로 번역하세요.\n"
-        "- 지정된 형식 외의 설명은 절대 포함하지 마세요."
-    )
-
-    # STEP 1
     output_log += T['log_step1_start'] + "\n"
     yield output_log
+    
     prompt_context = T['prompt_context'].format(company_name=company_name, job_title=job_title)
     chat_history = []
-    context_info = call_llm(prompt_context, chat_history, model, system_instruction=sys_instr_strict)
+    context_info = call_llm(prompt_context, chat_history, model)
     if context_info.startswith("오류") or context_info.startswith("Error"):
         yield output_log + T['log_step1_fail'] + context_info
         return
@@ -378,11 +351,11 @@ def generate_interview_questions(company_name, job_title, pdf_file_obj, num_inte
     yield output_log
     time.sleep(1)
 
-    # STEP 2
     output_log += T['log_step2_start'] + "\n"
     yield output_log
+    
     prompt_personas = T['prompt_personas'].format(company_name=company_name, job_title=job_title, num_interviewers=num_interviewers)
-    interviewer_personas = call_llm(prompt_personas, chat_history, model, system_instruction=sys_instr_strict)
+    interviewer_personas = call_llm(prompt_personas, chat_history, model)
     if interviewer_personas.startswith("오류") or interviewer_personas.startswith("Error"):
         yield output_log + T['log_step2_fail'] + interviewer_personas
         return
@@ -390,16 +363,16 @@ def generate_interview_questions(company_name, job_title, pdf_file_obj, num_inte
     yield output_log
     time.sleep(1)
 
-    # STEP 3
     output_log += T['log_step3_start'] + "\n"
     yield output_log
+
     prompt_final = T['prompt_final'].format(
         context_info=context_info,
         interviewer_personas=interviewer_personas,
         resume_text=resume_text,
         questions_per_interviewer=questions_per_interviewer
     )
-    final_questions_raw = call_llm(prompt_final, chat_history, model, system_instruction=sys_instr_strict)
+    final_questions_raw = call_llm(prompt_final, chat_history, model)
     if final_questions_raw.startswith("오류") or final_questions_raw.startswith("Error"):
         yield output_log + T['log_step3_fail'] + final_questions_raw
         return
@@ -407,27 +380,17 @@ def generate_interview_questions(company_name, job_title, pdf_file_obj, num_inte
     yield output_log
     time.sleep(1)
 
-    # --- [추가] reasoning 제거 ---
-    interviewer_personas_clean = strip_reasoning(interviewer_personas)
-    final_questions_clean = strip_reasoning(final_questions_raw)
-
-    # STEP 4: 요약/정리
     output_log += T['log_summary_start'] + "\n"
     yield output_log
+
     full_content_to_summarize = (
-        f"[면접관 페르소나]\n{interviewer_personas_clean}\n\n"
-        f"[면접 질문]\n{final_questions_clean}"
+        f"[면접관 페르소나]\n{interviewer_personas}\n\n"
+        f"[면접 질문]\n{final_questions_raw}"
     )
-    # --- 마지막 단계 지시 강화 ---
-    strict_final_prompt = (
-        "아래 내용을 검토하여:\n"
-        "1. 영어 문장은 모두 자연스러운 한국어로 번역\n"
-        "2. 중복·불필요한 설명·추론 문장은 삭제\n"
-        "3. '면접관 페르소나'와 '면접 질문'만 남김\n"
-        "4. 지정된 형식 외의 어떤 해설, 생각, 분석도 출력하지 않음\n\n"
-        f"{full_content_to_summarize}"
+    prompt_real_final = T['prompt_real_final'].format(
+        full_content_to_summarize=full_content_to_summarize
     )
-    summarized_result = call_llm(strict_final_prompt, chat_history, model, system_instruction=sys_instr_strict)
+    summarized_result = call_llm(prompt_real_final, chat_history, model)
     if summarized_result.startswith("오류") or summarized_result.startswith("Error"):
         summarized_result = T['log_summary_fail']
 
