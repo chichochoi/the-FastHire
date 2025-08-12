@@ -122,7 +122,7 @@ LANG_STRINGS = {
         
         "prompt_real_final": """
         
-아래 내용을 그대로 결과물로 반환하세요.
+아래 내용에서 영어를 다 지워주세요.
 
 내용:
 {full_content_to_summarize}
