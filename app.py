@@ -122,8 +122,7 @@ LANG_STRINGS = {
         
         "prompt_real_final": """
         
-아래 내용을 검토하여,
-1) 한글로 '면접관 페르소나'를 보여주세요
+아래 내용을 그대로 결과물로 반환하세요.
 
 내용:
 {full_content_to_summarize}
