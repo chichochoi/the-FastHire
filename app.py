@@ -51,7 +51,7 @@ LANG_STRINGS = {
     'ko': {
         "title": "FastHire | 맞춤형 면접 솔루션",
         "subtitle": "합성 면접관에게 진짜 면접 질문 받기!<br>면접관 수에 따라 여러 종류의 면접관이 여러분에게 질문합니다.",
-        "company_label": "1. 업종",
+        "company_label": "1. 업종(회사명명)",
         "company_placeholder": "예: 네이버웹툰",
         "job_label": "2. 채용 직무명",
         "job_placeholder": "예: 백엔드 개발자",
