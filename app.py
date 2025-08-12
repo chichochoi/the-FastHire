@@ -305,10 +305,8 @@ def call_llm(prompt: str, chat_history: list, model: str) -> str:
         
 # 이 함수를 새로 추가하세요.
 def handle_upload(pdf_file, lang_key):
-    """파일 업로드 시 피드백 메시지와 파일 객체를 반환합니다."""
     T = LANG_STRINGS[lang_key]
     if pdf_file:
-        # 튜플 형태로 두 개의 값을 반환합니다.
         return T['upload_success'], pdf_file
     return "", None
 
@@ -412,39 +410,38 @@ def generate_interview_questions(company_name, job_title, pdf_file_obj, num_inte
 def update_ui_language(lang_choice, current_file):
     lang_key = 'en' if lang_choice == 'English' else 'ko'
     T = LANG_STRINGS[lang_key]
-
     updated_live_users_html = update_live_users(lang_choice)
 
-    # 파일 업로드 후에는 파일 이름이 표시되므로, 피드백 텍스트를 초기화하지 않도록 처리
     feedback_text = gr.update() if current_file else ""
 
+    # HTML형식의 주요 UI 텍스트 블록 리턴 (lang 속성으로 감쌈)
     return (
         lang_key,
-        gr.update(value=T['title']),
-        gr.update(value=T['subtitle']),
+        gr.update(value=f'<h1 lang="{lang_key}">{T["title"]}</h1>'),
+        gr.update(value=f'<div lang="{lang_key}">{T["subtitle"]}</div>'),
         gr.update(label=T['company_label'], placeholder=T['company_placeholder']),
         gr.update(label=T['job_label'], placeholder=T['job_placeholder']),
         gr.update(label=T['interviewer_count_label']),
         gr.update(label=T['question_count_label']),
-        gr.update(label=T['upload_button_label']), # UploadButton의 'label'을 업데이트
+        gr.update(label=T['upload_button_label']),
         gr.update(value=feedback_text, label=T['upload_status_label']),
-        gr.update(value=T['privacy_notice']),
-        gr.update(value=T['generate_button_text']),
+        gr.update(value=f'<div lang="{lang_key}">{T["privacy_notice"]}</div>'),
+        gr.update(value=f'<div lang="{lang_key}">{T["generate_button_text"]}</div>'),
         gr.update(label=T['output_label']),
-        gr.update(value=T['contact_html']),
+        gr.update(value=f'<div lang="{lang_key}">{T["contact_html"]}</div>'),
         gr.update(value=updated_live_users_html)
     )
 
 
 # --- 실시간 접속자 수 업데이트 함수 ---
 def update_live_users(lang_choice):
-    """선택된 언어에 맞춰 실시간 접속자 수를 표시하는 HTML을 반환하는 함수"""
     lang_key = 'en' if lang_choice == 'English' else 'ko'
     T = LANG_STRINGS[lang_key]
     user_count = int(np.random.normal(loc=170, scale=30))
     live_user_text = T['live_users'].format(user_count=user_count)
+    # lang 속성으로 감싸서 반환
     html_content = f"""
-    <div style="display: flex; align-items: center; justify-content: flex-end;" lang="{lang_key}">
+    <div lang="{lang_key}" style="display: flex; align-items: center; justify-content: flex-end;">
         <span class="green-dot"></span>
         <span>{live_user_text}</span>
     </div>
@@ -457,12 +454,11 @@ css = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap');
-body, * {
-    font-family: 'Nanum Gothic', 'Arial', sans-serif !important;
-}
-:lang(en), [lang="en"] {
-    font-family: 'Noto Sans', 'Arial', sans-serif !important;
-}
+
+/* 언어별 폰트 */
+:lang(ko), [lang="ko"] * { font-family: 'Nanum Gothic', 'Arial', sans-serif !important; }
+:lang(en), [lang="en"] * { font-family: 'Noto Sans', 'Arial', sans-serif !important; }
+
 #header_row {
     display: flex;
     justify-content: space-between;
@@ -487,24 +483,18 @@ body, * {
 """
 
 with gr.Blocks(
+    css=css,
     title="FastHire | 합성 면접관에게 진짜 면접 받기",
     theme=gr.themes.Soft(),
-    css=css
 ) as demo:
-    lang_state = gr.State("ko")
-    pdf_file_state = gr.State(None)
+    lang_state = gr.State(value="ko")
+    pdf_file_state = gr.State(value=None)
 
     with gr.Row(elem_id="header_row"):
-        # lang 속성 활용 - 핵심!
-        title_md = gr.Markdown(
-            LANG_STRINGS['ko']['title'], 
-            elem_id="title_md", 
-            elem_metadata={"lang": "ko"}
-        )
-
+        # 제목, 부제목을 HTML로 lang 속성 처리
+        title_html = gr.HTML(f'<h1 lang="ko">{LANG_STRINGS["ko"]["title"]}</h1>')
         with gr.Column(elem_id="right_header_container", scale=0):
-            live_users = gr.HTML(update_live_users("한국어"), elem_id="live_users_html")
-
+            live_users = gr.HTML(update_live_users("한국어"))
             lang_selector = gr.Radio(
                 ["한국어", "English"],
                 value="한국어",
@@ -514,43 +504,22 @@ with gr.Blocks(
             )
 
     timer = gr.Timer(7)
-    subtitle_md = gr.Markdown(
-        LANG_STRINGS['ko']['subtitle'], 
-        elem_id="subtitle_md", 
-        elem_metadata={"lang": "ko"}
-    )
+    subtitle_html = gr.HTML(f'<div lang="ko">{LANG_STRINGS["ko"]["subtitle"]}</div>')
+
+    # 입력 블록은 기존대로, 텍스트 출력은 lang 속성을 함께 지정
+    with gr.Row():
+        company_name = gr.Textbox(label=LANG_STRINGS['ko']['company_label'], placeholder=LANG_STRINGS['ko']['company_placeholder'])
+        job_title = gr.Textbox(label=LANG_STRINGS['ko']['job_label'], placeholder=LANG_STRINGS['ko']['job_placeholder'])
 
     with gr.Row():
-        company_name = gr.Textbox(
-            label=LANG_STRINGS['ko']['company_label'],
-            placeholder=LANG_STRINGS['ko']['company_placeholder'],
-            elem_id="company_name"
-        )
-        job_title = gr.Textbox(
-            label=LANG_STRINGS['ko']['job_label'],
-            placeholder=LANG_STRINGS['ko']['job_placeholder'],
-            elem_id="job_title"
-        )
-
-    with gr.Row():
-        num_interviewers = gr.Slider(
-            label=LANG_STRINGS['ko']['interviewer_count_label'], 
-            minimum=1, maximum=3, value=2, step=1,
-            elem_id="num_interviewers"
-        )
-        questions_per_interviewer = gr.Slider(
-            label=LANG_STRINGS['ko']['question_count_label'], 
-            minimum=1, maximum=2, value=2, step=1,
-            elem_id="questions_per_interviewer"
-        )
+        num_interviewers = gr.Slider(label=LANG_STRINGS['ko']['interviewer_count_label'], minimum=1, maximum=3, value=2, step=1)
+        questions_per_interviewer = gr.Slider(label=LANG_STRINGS['ko']['question_count_label'], minimum=1, maximum=2, value=2, step=1)
 
     pdf_file = gr.UploadButton(
-        LANG_STRINGS['ko']['upload_button_text'],
-        label=LANG_STRINGS['ko']['upload_button_label'],
-        file_types=[".pdf"],
-        elem_id="pdf_file"
+        LANG_STRINGS['ko']['upload_button_label'],
+        file_types=[".pdf"]
     )
-    upload_feedback_box = gr.Textbox(label=LANG_STRINGS['ko']['upload_status_label'], interactive=False, elem_id="upload_feedback")
+    upload_feedback_box = gr.Textbox(label=LANG_STRINGS['ko']['upload_status_label'], interactive=False)
 
     pdf_file.upload(
         fn=handle_upload,
@@ -558,34 +527,18 @@ with gr.Blocks(
         outputs=[upload_feedback_box, pdf_file_state]
     )
 
-    privacy_notice_html = gr.HTML(LANG_STRINGS['ko']['privacy_notice'], elem_id="privacy_notice")
-    generate_button = gr.Button(LANG_STRINGS['ko']['generate_button_text'], variant="primary", elem_id="generate_button")
-    output_textbox = gr.Textbox(label=LANG_STRINGS['ko']['output_label'], lines=20, interactive=False, show_copy_button=True, elem_id="output_textbox")
-    contact_html = gr.HTML(LANG_STRINGS['ko']['contact_html'], elem_id="contact_html")
+    privacy_notice_html = gr.HTML(f'<div lang="ko">{LANG_STRINGS["ko"]["privacy_notice"]}</div>')
+    generate_button = gr.Button(LANG_STRINGS['ko']['generate_button_text'], variant="primary")
+    output_textbox = gr.Textbox(label=LANG_STRINGS['ko']['output_label'], lines=20, interactive=False, show_copy_button=True)
+    contact_html = gr.HTML(f'<div lang="ko">{LANG_STRINGS["ko"]["contact_html"]}</div>')
 
-    # lang_state 값에 따라 lang 속성 부여
-    def set_lang(elem, lang_key):
-        # Gradio에선 직접 HTML에 lang을 태그로 부여 어렵지만,
-        # Markdown, HTML, 컴포넌트의 elem_id/elem_metadata 혹은 HTML컨텐츠에 직접 <div lang="en">... 형태 삽입 가능
-        # 여기서는 elem_metadata 예시 활용
-        elem.elem_metadata = {"lang": lang_key}
-
-    # 이벤트 리스너: 언어 변경 시 (Markdown, HTML 등 lang속성 업데이트)
-    def update_ui_and_lang(
-        lang_choice, pdf_file_state
-    ):
-        result = update_ui_language(lang_choice, pdf_file_state)
-        lang_key = result[0]
-        set_lang(title_md, lang_key)
-        set_lang(subtitle_md, lang_key)
-        set_lang(live_users, lang_key)
-        return result
-
+    # 언어 선택 시, 모든 주요 텍스트 HTML 블록 값(lang 속성)을 업데이트
     lang_selector.select(
-        fn=update_ui_and_lang,  # 위에서 lang 속성도 함께 업데이트
+        fn=update_ui_language,
         inputs=[lang_selector, pdf_file_state],
         outputs=[
-            lang_state, title_md, subtitle_md,
+            lang_state,
+            title_html, subtitle_html,
             company_name, job_title, num_interviewers, questions_per_interviewer,
             pdf_file,
             upload_feedback_box, privacy_notice_html, generate_button,
@@ -609,4 +562,5 @@ with gr.Blocks(
 if __name__ == "__main__":
     demo.launch(
         server_name="0.0.0.0",
-        server_port=int(os.environ.get('PORT', 7860)))
+        server_port=int(os.environ.get('PORT', 7860))
+    )
