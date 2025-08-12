@@ -49,7 +49,7 @@ LLAMA_MODEL_ID = {
 # --- [신규] 다국어 지원을 위한 텍스트 관리 ---
 LANG_STRINGS = {
     'ko': {
-        "title": "# **FastHire | 맞춤형 면접 솔루션**",
+        "title": "FastHire | 맞춤형 면접 솔루션",
         "subtitle": "합성 면접관에게 진짜 면접 질문 받기!<br>면접관 수에 따라 여러 종류의 면접관이 여러분에게 질문합니다.",
         "company_label": "1. 회사명",
         "company_placeholder": "예: 네이버웹툰",
@@ -426,7 +426,7 @@ def update_ui_language(lang_choice, current_file):
         gr.update(label=T['upload_button_label']),
         gr.update(value=feedback_text, label=T['upload_status_label']),
         gr.update(value=f'<div lang="{lang_key}">{T["privacy_notice"]}</div>'),
-        gr.update(value=f'<div lang="{lang_key}">{T["generate_button_text"]}</div>'),
+        gr.update(value=f'{T["generate_button_text"]}'),
         gr.update(label=T['output_label']),
         gr.update(value=f'<div lang="{lang_key}">{T["contact_html"]}</div>'),
         gr.update(value=updated_live_users_html)
@@ -512,8 +512,8 @@ with gr.Blocks(
         job_title = gr.Textbox(label=LANG_STRINGS['ko']['job_label'], placeholder=LANG_STRINGS['ko']['job_placeholder'])
 
     with gr.Row():
-        num_interviewers = gr.Slider(label=LANG_STRINGS['ko']['interviewer_count_label'], minimum=1, maximum=3, value=2, step=1)
-        questions_per_interviewer = gr.Slider(label=LANG_STRINGS['ko']['question_count_label'], minimum=1, maximum=2, value=2, step=1)
+        num_interviewers = gr.Slider(label=LANG_STRINGS['ko']['interviewer_count_label'], minimum=1, maximum=2, value=1, step=1)
+        questions_per_interviewer = gr.Slider(label=LANG_STRINGS['ko']['question_count_label'], minimum=1, maximum=2, value=1, step=1)
 
     pdf_file = gr.UploadButton(
         LANG_STRINGS['ko']['upload_button_label'],
