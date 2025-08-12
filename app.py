@@ -492,7 +492,12 @@ with gr.Blocks(
 
     with gr.Row(elem_id="header_row"):
         # 제목, 부제목을 HTML로 lang 속성 처리
-        title_html = gr.HTML(f'<h1 lang="ko">{LANG_STRINGS["ko"]["title"]}</h1>')
+        title_html = gr.HTML(f'''
+            <div style="display: flex; align-items: center;">
+                <img src="logo2.jpg" width="24" height="24" style="margin-right: 8px;">
+                <h1 lang="ko" style="margin: 0">{LANG_STRINGS["ko"]["title"]}</h1>
+            </div>
+        ''')
         with gr.Column(elem_id="right_header_container", scale=0):
             live_users = gr.HTML(update_live_users("한국어"))
             lang_selector = gr.Radio(
