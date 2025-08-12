@@ -123,7 +123,7 @@ LANG_STRINGS = {
         
         "prompt_real_final": """
         
-아래 내용에서 한글만 남겨주세요
+아래 내용에서 영어 위주 문장을 지우고 한글위주 문장만 남겨주세요
 
 내용:
 {full_content_to_summarize}
