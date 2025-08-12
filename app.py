@@ -503,8 +503,8 @@ with gr.Blocks(
         job_title = gr.Textbox(label=LANG_STRINGS['ko']['job_label'], placeholder=LANG_STRINGS['ko']['job_placeholder'])
 
     with gr.Row():
-        num_interviewers = gr.Slider(label=LANG_STRINGS['ko']['interviewer_count_label'], minimum=1, maximum=5, value=2, step=1)
-        questions_per_interviewer = gr.Slider(label=LANG_STRINGS['ko']['question_count_label'], minimum=1, maximum=5, value=3, step=1)
+        num_interviewers = gr.Slider(label=LANG_STRINGS['ko']['interviewer_count_label'], minimum=1, maximum=3, value=2, step=1)
+        questions_per_interviewer = gr.Slider(label=LANG_STRINGS['ko']['question_count_label'], minimum=1, maximum=2, value=2, step=1)
 
     # --- [수정된 UI] UploadButton에 label 추가 ---
     pdf_file = gr.UploadButton(
