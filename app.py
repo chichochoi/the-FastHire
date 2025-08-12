@@ -444,7 +444,7 @@ def update_live_users(lang_choice):
     user_count = int(np.random.normal(loc=170, scale=30))
     live_user_text = T['live_users'].format(user_count=user_count)
     html_content = f"""
-    <div style="display: flex; align-items: center; justify-content: flex-end;">
+    <div style="display: flex; align-items: center; justify-content: flex-end;" lang="{lang_key}">
         <span class="green-dot"></span>
         <span>{live_user_text}</span>
     </div>
@@ -456,8 +456,12 @@ def update_live_users(lang_choice):
 css = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap');
 body, * {
     font-family: 'Nanum Gothic', 'Arial', sans-serif !important;
+}
+:lang(en), [lang="en"] {
+    font-family: 'Noto Sans', 'Arial', sans-serif !important;
 }
 #header_row {
     display: flex;
@@ -485,17 +489,21 @@ body, * {
 with gr.Blocks(
     title="FastHire | 합성 면접관에게 진짜 면접 받기",
     theme=gr.themes.Soft(),
-    css=css,
-    head=ga_script_html # <-- 파비콘 link 태그가 포함된 변수로 사용
+    css=css
 ) as demo:
     lang_state = gr.State("ko")
     pdf_file_state = gr.State(None)
 
     with gr.Row(elem_id="header_row"):
-        title_md = gr.Markdown(LANG_STRINGS['ko']['title'])
+        # lang 속성 활용 - 핵심!
+        title_md = gr.Markdown(
+            LANG_STRINGS['ko']['title'], 
+            elem_id="title_md", 
+            elem_metadata={"lang": "ko"}
+        )
 
         with gr.Column(elem_id="right_header_container", scale=0):
-            live_users = gr.HTML(update_live_users("한국어"))
+            live_users = gr.HTML(update_live_users("한국어"), elem_id="live_users_html")
 
             lang_selector = gr.Radio(
                 ["한국어", "English"],
@@ -506,43 +514,80 @@ with gr.Blocks(
             )
 
     timer = gr.Timer(7)
-    subtitle_md = gr.Markdown(LANG_STRINGS['ko']['subtitle'])
+    subtitle_md = gr.Markdown(
+        LANG_STRINGS['ko']['subtitle'], 
+        elem_id="subtitle_md", 
+        elem_metadata={"lang": "ko"}
+    )
 
     with gr.Row():
-        company_name = gr.Textbox(label=LANG_STRINGS['ko']['company_label'], placeholder=LANG_STRINGS['ko']['company_placeholder'])
-        job_title = gr.Textbox(label=LANG_STRINGS['ko']['job_label'], placeholder=LANG_STRINGS['ko']['job_placeholder'])
+        company_name = gr.Textbox(
+            label=LANG_STRINGS['ko']['company_label'],
+            placeholder=LANG_STRINGS['ko']['company_placeholder'],
+            elem_id="company_name"
+        )
+        job_title = gr.Textbox(
+            label=LANG_STRINGS['ko']['job_label'],
+            placeholder=LANG_STRINGS['ko']['job_placeholder'],
+            elem_id="job_title"
+        )
 
     with gr.Row():
-        num_interviewers = gr.Slider(label=LANG_STRINGS['ko']['interviewer_count_label'], minimum=1, maximum=3, value=2, step=1)
-        questions_per_interviewer = gr.Slider(label=LANG_STRINGS['ko']['question_count_label'], minimum=1, maximum=2, value=2, step=1)
+        num_interviewers = gr.Slider(
+            label=LANG_STRINGS['ko']['interviewer_count_label'], 
+            minimum=1, maximum=3, value=2, step=1,
+            elem_id="num_interviewers"
+        )
+        questions_per_interviewer = gr.Slider(
+            label=LANG_STRINGS['ko']['question_count_label'], 
+            minimum=1, maximum=2, value=2, step=1,
+            elem_id="questions_per_interviewer"
+        )
 
-    # --- [수정된 UI] UploadButton에 label 추가 ---
     pdf_file = gr.UploadButton(
         LANG_STRINGS['ko']['upload_button_text'],
-        label=LANG_STRINGS['ko']['upload_button_label'], # 라벨 추가
-        file_types=[".pdf"]
+        label=LANG_STRINGS['ko']['upload_button_label'],
+        file_types=[".pdf"],
+        elem_id="pdf_file"
     )
-    upload_feedback_box = gr.Textbox(label=LANG_STRINGS['ko']['upload_status_label'], interactive=False)
+    upload_feedback_box = gr.Textbox(label=LANG_STRINGS['ko']['upload_status_label'], interactive=False, elem_id="upload_feedback")
 
     pdf_file.upload(
         fn=handle_upload,
         inputs=[pdf_file, lang_state],
         outputs=[upload_feedback_box, pdf_file_state]
     )
-    
-    privacy_notice_html = gr.HTML(LANG_STRINGS['ko']['privacy_notice'])
-    generate_button = gr.Button(LANG_STRINGS['ko']['generate_button_text'], variant="primary")
-    output_textbox = gr.Textbox(label=LANG_STRINGS['ko']['output_label'], lines=20, interactive=False, show_copy_button=True)
-    contact_html = gr.HTML(LANG_STRINGS['ko']['contact_html'])
 
-    # --- [수정된 이벤트 리스너] ---
+    privacy_notice_html = gr.HTML(LANG_STRINGS['ko']['privacy_notice'], elem_id="privacy_notice")
+    generate_button = gr.Button(LANG_STRINGS['ko']['generate_button_text'], variant="primary", elem_id="generate_button")
+    output_textbox = gr.Textbox(label=LANG_STRINGS['ko']['output_label'], lines=20, interactive=False, show_copy_button=True, elem_id="output_textbox")
+    contact_html = gr.HTML(LANG_STRINGS['ko']['contact_html'], elem_id="contact_html")
+
+    # lang_state 값에 따라 lang 속성 부여
+    def set_lang(elem, lang_key):
+        # Gradio에선 직접 HTML에 lang을 태그로 부여 어렵지만,
+        # Markdown, HTML, 컴포넌트의 elem_id/elem_metadata 혹은 HTML컨텐츠에 직접 <div lang="en">... 형태 삽입 가능
+        # 여기서는 elem_metadata 예시 활용
+        elem.elem_metadata = {"lang": lang_key}
+
+    # 이벤트 리스너: 언어 변경 시 (Markdown, HTML 등 lang속성 업데이트)
+    def update_ui_and_lang(
+        lang_choice, pdf_file_state
+    ):
+        result = update_ui_language(lang_choice, pdf_file_state)
+        lang_key = result[0]
+        set_lang(title_md, lang_key)
+        set_lang(subtitle_md, lang_key)
+        set_lang(live_users, lang_key)
+        return result
+
     lang_selector.select(
-        fn=update_ui_language,
+        fn=update_ui_and_lang,  # 위에서 lang 속성도 함께 업데이트
         inputs=[lang_selector, pdf_file_state],
         outputs=[
             lang_state, title_md, subtitle_md,
             company_name, job_title, num_interviewers, questions_per_interviewer,
-            pdf_file, # 이제 'label'이 업데이트됩니다.
+            pdf_file,
             upload_feedback_box, privacy_notice_html, generate_button,
             output_textbox, contact_html,
             live_users
