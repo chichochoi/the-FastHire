@@ -319,6 +319,8 @@ def generate_interview_questions(company_name, job_title, pdf_file_obj, num_inte
     # 현재 언어에 맞는 텍스트 로드
     T = LANG_STRINGS[lang]
     model = MODELS[lang]
+    llama_model_name = LLAMA_MODEL_ID[lang]
+
 
     if not all([company_name, job_title, pdf_file_obj]):
         yield T['error_all_fields']
@@ -394,7 +396,7 @@ def generate_interview_questions(company_name, job_title, pdf_file_obj, num_inte
     prompt_real_final = T['prompt_real_final'].format(
         full_content_to_summarize=full_content_to_summarize
     )
-    summarized_result = call_llm(prompt_real_final, chat_history, LLAMA_MODEL_ID)
+    summarized_result = call_llm(prompt_real_final, chat_history, llama_model_name)
     if summarized_result.startswith("오류") or summarized_result.startswith("Error"):
         summarized_result = T['log_summary_fail']
 
