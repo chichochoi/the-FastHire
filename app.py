@@ -494,7 +494,7 @@ with gr.Blocks(
         # 제목, 부제목을 HTML로 lang 속성 처리
         title_html = gr.HTML(f'''
             <div style="display: flex; align-items: center;">
-                <img src="logo2.jpg" width="24" height="24" style="margin-right: 8px;">
+                <img src="https://github.com/chichochoi/the-FastHire/blob/main/logo2.jpg?raw=true" width="24" height="24" style="margin-right: 8px;">
                 <h1 lang="ko" style="margin: 0">{LANG_STRINGS["ko"]["title"]}</h1>
             </div>
         ''')
@@ -518,7 +518,7 @@ with gr.Blocks(
 
     with gr.Row():
         num_interviewers = gr.Slider(label=LANG_STRINGS['ko']['interviewer_count_label'], minimum=1, maximum=2, value=1, step=1)
-        questions_per_interviewer = gr.Slider(label=LANG_STRINGS['ko']['question_count_label'], minimum=1, maximum=2, value=1, step=1)
+        questions_per_interviewer = gr.Slider(label=LANG_STRINGS['ko']['question_count_label'], minimum=1, maximum=3, value=2, step=1)
 
     pdf_file = gr.UploadButton(
         LANG_STRINGS['ko']['upload_button_label'],
