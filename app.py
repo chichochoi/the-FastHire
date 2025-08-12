@@ -51,7 +51,7 @@ LANG_STRINGS = {
     'ko': {
         "title": "FastHire | 맞춤형 면접 솔루션",
         "subtitle": "합성 면접관에게 진짜 면접 질문 받기!<br>면접관 수에 따라 여러 종류의 면접관이 여러분에게 질문합니다.",
-        "company_label": "1. 회사명",
+        "company_label": "1. 업종",
         "company_placeholder": "예: 네이버웹툰",
         "job_label": "2. 채용 직무명",
         "job_placeholder": "예: 백엔드 개발자",
@@ -494,7 +494,7 @@ with gr.Blocks(
         # 제목, 부제목을 HTML로 lang 속성 처리
         title_html = gr.HTML(f'''
             <div style="display: flex; align-items: center;">
-                <img src="https://github.com/chichochoi/the-FastHire/blob/main/logo2.jpg?raw=true" width="24" height="24" style="margin-right: 8px;">
+                <img src="https://github.com/chichochoi/the-FastHire/blob/main/logo2.jpg?raw=true" width="35" height="35" style="margin-right: 8px;">
                 <h1 lang="ko" style="margin: 0">{LANG_STRINGS["ko"]["title"]}</h1>
             </div>
         ''')
