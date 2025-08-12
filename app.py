@@ -389,6 +389,10 @@ def generate_interview_questions(company_name, job_title, pdf_file_obj, num_inte
     output_log += T['log_summary_start'] + "\n"
     yield output_log
 
+    
+    # 💡 여기서 chat_history를 새로 빈 리스트로 초기화
+    chat_history = []
+
     full_content_to_summarize = (
         f"[면접관 페르소나]\n{interviewer_personas}\n\n"
         f"[면접 질문]\n{final_questions_raw}"
