@@ -486,6 +486,7 @@ with gr.Blocks(
     css=css,
     title="FastHire | 합성 면접관에게 진짜 면접 받기",
     theme=gr.themes.Soft(),
+    head=ga_script_html
 ) as demo:
     lang_state = gr.State(value="ko")
     pdf_file_state = gr.State(value=None)
