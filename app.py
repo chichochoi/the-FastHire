@@ -134,7 +134,7 @@ LANG_STRINGS = {
 """,
     },
     'en': {
-        "title": "# **FastHire | Custom Interview Solution**",
+        "title": "FastHire | Custom Interview Solution",
         "subtitle": "Generates tailored interview questions based on the company, job title, and applicant's PDF.<br>Different types of interviewers will ask you questions depending on the number selected.",
         "company_label": "1. Company Name",
         "company_placeholder": "e.g., Google",
