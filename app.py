@@ -41,6 +41,10 @@ MODELS = {
     'ko': 'lgai/exaone-deep-32b',
     'en': 'lgai/exaone-deep-32b' # 영어권에서 성능이 좋은 Llama 모델
 }
+LLAMA_MODEL_ID = {
+    'ko': 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free',
+    'en': 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free' 
+}
 
 # --- [신규] 다국어 지원을 위한 텍스트 관리 ---
 LANG_STRINGS = {
@@ -390,7 +394,7 @@ def generate_interview_questions(company_name, job_title, pdf_file_obj, num_inte
     prompt_real_final = T['prompt_real_final'].format(
         full_content_to_summarize=full_content_to_summarize
     )
-    summarized_result = call_llm(prompt_real_final, chat_history, model)
+    summarized_result = call_llm(prompt_real_final, chat_history, LLAMA_MODEL_ID)
     if summarized_result.startswith("오류") or summarized_result.startswith("Error"):
         summarized_result = T['log_summary_fail']
 
