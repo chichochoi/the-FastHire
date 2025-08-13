@@ -414,10 +414,18 @@ def update_ui_language(lang_choice, current_file):
 
     feedback_text = gr.update() if current_file else ""
 
+    # 로고를 포함한 title HTML 생성
+    title_html_with_logo = f'''
+        <div style="display: flex; align-items: center;">
+            <img src="https://github.com/chichochoi/the-FastHire/blob/main/logo2.jpg?raw=true" width="35" height="35" style="margin-right: 8px;">
+            <h1 lang="{lang_key}" style="margin: 0">{T["title"]}</h1>
+        </div>
+    '''
+
     # HTML형식의 주요 UI 텍스트 블록 리턴 (lang 속성으로 감쌈)
     return (
         lang_key,
-        gr.update(value=f'<h1 lang="{lang_key}">{T["title"]}</h1>'),
+        gr.update(value=title_html_with_logo),
         gr.update(value=f'<div lang="{lang_key}">{T["subtitle"]}</div>'),
         gr.update(label=T['company_label'], placeholder=T['company_placeholder']),
         gr.update(label=T['job_label'], placeholder=T['job_placeholder']),
@@ -431,8 +439,6 @@ def update_ui_language(lang_choice, current_file):
         gr.update(value=f'<div lang="{lang_key}">{T["contact_html"]}</div>'),
         gr.update(value=updated_live_users_html)
     )
-
-
 # --- 실시간 접속자 수 업데이트 함수 ---
 def update_live_users(lang_choice):
     lang_key = 'en' if lang_choice == 'English' else 'ko'
